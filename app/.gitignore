@@ -5,6 +5,7 @@ __pycache__/
 
 # Dane aplikacji (lokalne zadania) - nie chcemy ich w repozytorium
 tasks.json
+camper.db
 
 # Zmienne środowiskowe / sekrety (hasła, klucze) - NIGDY nie wrzucamy tego na GitHub
 .env
