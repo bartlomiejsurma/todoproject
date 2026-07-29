@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Terminy{% endblock %}
+{% block content %}
+    <h1>⏰ Terminy</h1>
+
+    <form action="/deadlines/add" method="post" style="display:grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap:8px; margin-bottom:24px; background:white; padding:16px; border-radius:8px;">
+        <input type="text" name="title" placeholder="Nazwa terminu" autofocus
+               style="min-width:200px; padding:10px; font-size:15px; border:1px solid #ccc; border-radius:6px;">
+        <input type="date" name="due_date" style="padding:10px; font-size:15px; border:1px solid #ccc; border-radius:6px;">
+        <input type="text" name="note" placeholder="Notatka (opcjonalnie)"
+               style="min-width:200px; padding:10px; font-size:15px; border:1px solid #ccc; border-radius:6px;">
+        <button type="submit" style="min-width:140px;">Dodaj termin</button>
+    </form>
+
+    {% if deadlines %}
+    <div style="display:grid; gap:12px;">
+        {% for deadline in deadlines %}
+        <div style="background:white; border-radius:8px; padding:16px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 1px 3px rgba(0,0,0,0.08); border: 3px solid {{ '#16a34a' if deadline.urgency == 'green' else '#eab308' if deadline.urgency == 'yellow' else '#dc2626' if deadline.urgency == 'red' else '#cbd5e1' }};">
+            <div>
+                <strong style="display:block; font-size:16px; margin-bottom:8px;">{{ deadline.title }}</strong>
+                <div style="font-size:14px; color:#475569;">Termin: {{ deadline.due_date }}</div>
+                <div style="font-size:13px; color:#475569; margin-top:4px;">{{ deadline.urgency_label }}</div>
+                {% if deadline.note %}
+                <div style="font-size:13px; color:#64748b; margin-top:6px;">{{ deadline.note }}</div>
+                {% endif %}
+            </div>
+            <div style="text-align:right; display:flex; flex-direction:column; gap:8px;">
+                <span style="font-size:13px; color:{{ '#16a34a' if deadline.urgency == 'green' else '#eab308' if deadline.urgency == 'yellow' else '#dc2626' if deadline.urgency == 'red' else '#64748b' }}; font-weight:700;">{{ deadline.urgency_label }}</span>
+                <div style="display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;">
+                    <a href="/deadlines/edit/{{ deadline.id }}" style="font-size:14px; color:#2d6cdf; text-decoration:none;">✏️ Edytuj</a>
+                    <a href="/deadlines/delete/{{ deadline.id }}" onclick="return confirm('Czy na pewno usunąć ten termin?');" style="font-size:14px; color:#ef4444; text-decoration:none;">🗑️ Usuń</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p style="text-align:center; color:#888;">Brak terminów. Dodaj nowy termin powyżej.</p>
+    {% endif %}
+{% endblock %}

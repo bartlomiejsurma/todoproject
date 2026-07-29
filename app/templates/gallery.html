@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Galeria{% endblock %}
+{% block content %}
+    <h1>🖼️ Galeria</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div style="margin-bottom:20px;">
+        {% for category, message in messages %}
+        <div style="padding:12px; border-radius:8px; margin-bottom:8px; color:white; background:{{ '#16a34a' if category == 'success' else '#dc2626' }};">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <form action="/gallery/upload" method="post" enctype="multipart/form-data" style="display:grid; grid-template-columns: minmax(150px, 1fr) auto auto; gap:12px; align-items:center; margin-bottom:24px; background:white; padding:16px; border-radius:8px;">
+        <input type="file" name="photo" accept="image/*" style="padding:10px; border:1px solid #ccc; border-radius:6px;">
+        <button type="submit">Wyślij zdjęcie</button>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <label for="sort" style="font-size:14px; color:#334155;">Sortuj:</label>
+            <select id="sort" name="sort" onchange="location = this.value" style="padding:10px; border:1px solid #ccc; border-radius:6px;">
+                <option value="/gallery?sort=newest" {% if sort_mode == 'newest' %}selected{% endif %}>Najnowsze</option>
+                <option value="/gallery?sort=oldest" {% if sort_mode == 'oldest' %}selected{% endif %}>Najstarsze</option>
+            </select>
+        </div>
+    </form>
+
+    {% if files %}
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:16px;">
+        {% for filename in files %}
+        <div style="background:white; border-radius:12px; overflow:hidden; box-shadow:0 1px 5px rgba(0,0,0,0.1);">
+            <img src="/static/gallery/{{ filename }}" alt="{{ filename }}" style="width:100%; display:block; object-fit:cover; min-height:180px;">
+            <div style="padding:12px; display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; row-gap:8px;">
+                <span style="font-size:14px; color:#334155;">{{ filename }}</span>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <a href="/static/gallery/{{ filename }}" download style="font-size:14px; color:#2d6cdf; text-decoration:none;">Pobierz</a>
+                    <a href="/gallery/delete/{{ filename }}" onclick="return confirm('Czy na pewno usunąć to zdjęcie?');" style="font-size:14px; color:#ef4444; text-decoration:none;">Usuń</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p style="text-align:center; color:#888;">Galeria jest pusta. Wyślij pierwsze zdjęcie.</p>
+    {% endif %}
+{% endblock %}

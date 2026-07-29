@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Strona główna{% endblock %}
+{% block content %}
+    <div style="background:white; border-radius:12px; padding:32px; box-shadow:0 1px 10px rgba(0,0,0,0.08);">
+        <h1 style="margin-top:0;">Witaj w panelu Campervana!</h1>
+        <p style="font-size:16px; color:#475569; line-height:1.6;">Tutaj możesz zarządzać zadaniami, usterkami, terminami i galerią zdjęć. Wybierz jedną z zakładek w górnym menu, aby rozpocząć.</p>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-top:24px;">
+            <a href="/todo" style="display:block; padding:20px; border-radius:12px; background:#eef2ff; color:#1e40af; text-decoration:none; font-weight:700;">💡 Pomysły</a>
+            <a href="/issues" style="display:block; padding:20px; border-radius:12px; background:#f0fdf4; color:#166534; text-decoration:none; font-weight:700;">🔧 To-Do</a>
+            <a href="/deadlines" style="display:block; padding:20px; border-radius:12px; background:#fef3c7; color:#92400e; text-decoration:none; font-weight:700;">⏰ Terminy</a>
+            <a href="/gallery" style="display:block; padding:20px; border-radius:12px; background:#f8fafc; color:#0f172a; text-decoration:none; font-weight:700;">🖼️ Galeria</a>
+        </div>
+    </div>
+{% endblock %}

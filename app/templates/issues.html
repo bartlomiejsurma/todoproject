@@ -1,14 +1,31 @@
 {% extends "base.html" %}
-{% block title %}Usterki{% endblock %}
+{% block title %}To-Do{% endblock %}
 {% block content %}
-    <h1>🔧 Usterki i pomysły</h1>
+    <h1>🔧 To-Do</h1>
 
-    <form action="/issues/add" method="post" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:24px; background:white; padding:16px; border-radius:8px;">
+    <form action="/issues/add" method="post" enctype="multipart/form-data" style="display:grid; grid-template-columns: 1.6fr 1.4fr 1fr 1fr 1fr; gap:8px; margin-bottom:24px; background:white; padding:16px; border-radius:8px;">
         <input type="text" name="title" placeholder="Tytuł (np. Wymienić bezpiecznik lodówki)" autofocus
-               style="flex:1; min-width:200px; padding:10px; font-size:15px; border:1px solid #ccc; border-radius:6px;">
+               style="min-width:200px; padding:10px; font-size:15px; border:1px solid #ccc; border-radius:6px;">
         <input type="text" name="description" placeholder="Opis (opcjonalnie)"
-               style="flex:2; min-width:200px; padding:10px; font-size:15px; border:1px solid #ccc; border-radius:6px;">
-        <button type="submit">Dodaj kartę</button>
+               style="min-width:200px; padding:10px; font-size:15px; border:1px solid #ccc; border-radius:6px;">
+        <select name="category" style="padding:10px; font-size:15px; border:1px solid #ccc; border-radius:6px;">
+            {% for category in categories %}
+            <option value="{{ category }}">{{ category_labels[category] }}</option>
+            {% endfor %}
+        </select>
+        <input type="file" name="image" accept="image/*" style="padding:10px; font-size:15px; border:1px solid #ccc; border-radius:6px;">
+        <button type="submit" style="min-width:120px;">Dodaj kartę</button>
+    </form>
+
+    <form action="/issues" method="get" style="margin-bottom:24px; display:flex; gap:12px; align-items:center;">
+        <label for="category-filter" style="font-weight:600;">Filtruj kategorię:</label>
+        <select id="category-filter" name="category" style="padding:10px; font-size:15px; border:1px solid #ccc; border-radius:6px;">
+            <option value="" {% if not selected_category %}selected{% endif %}>Wszystkie</option>
+            {% for category in categories %}
+            <option value="{{ category }}" {% if selected_category == category %}selected{% endif %}>{{ category_labels[category] }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn">Filtruj</button>
     </form>
 
     <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:16px;">
@@ -22,11 +39,22 @@
                 {% if issue.description %}
                 <p style="margin:6px 0; font-size:14px; color:#555;">{{ issue.description }}</p>
                 {% endif %}
-                <div style="margin-top:8px; display:flex; gap:10px;">
+                <p style="margin:6px 0 0; font-size:13px; color:#475569;">Kategoria: {{ category_labels[issue.category] }}</p>
+                {% if issue.image %}
+                <img src="/static/attachments/{{ issue.image }}" alt="Załącznik" style="width:100%; max-width:260px; margin-top:10px; border-radius:8px; object-fit:cover; border:1px solid #e2e8f0;">
+                {% endif %}
+                <div style="margin-top:8px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                    <a href="/issues/card/{{ issue.id }}" style="font-size:13px; text-decoration:none; color:#2563eb;">Otwórz kartę</a>
+                    {% if status != 'todo' %}
+                    <a href="/issues/revert/{{ issue.id }}" style="font-size:13px; text-decoration:none; color:#2d6cdf;">⬅️ Wstecz</a>
+                    {% endif %}
+                    {% if status == 'todo' %}
+                    <a href="/issues/send_back/{{ issue.id }}" style="font-size:13px; text-decoration:none; color:#10b981;">↩️ Przenieś do pomysłów</a>
+                    {% endif %}
                     {% if status != 'done' %}
                     <a href="/issues/advance/{{ issue.id }}" style="font-size:13px; text-decoration:none; color:#2d6cdf;">➡️ Dalej</a>
                     {% endif %}
-                    <a href="/issues/delete/{{ issue.id }}" style="font-size:13px; text-decoration:none; color:#c0392b;">🗑️ Usuń</a>
+                    <a href="/issues/delete/{{ issue.id }}" onclick="return confirm('Czy na pewno usunąć tę kartę?');" style="font-size:13px; text-decoration:none; color:#c0392b;">🗑️ Usuń</a>
                 </div>
             </div>
             {% else %}

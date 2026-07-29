@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% block title %}Finanse{% endblock %}
+{% block content %}
+    <h1>💰 Finanse</h1>
+
+    <section class="section">
+    <div class="panel-grid columns-2">
+        <div class="card">
+            <h2>Budżet</h2>
+            <div style="display:grid; gap:16px;">
+                <div style="display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+                    <div>
+                        <p class="small-text">Aktualny budżet</p>
+                        <p style="font-size:1.8rem; font-weight:700; margin:4px 0;">{{ budget | round(2) }} zł</p>
+                    </div>
+                    <div>
+                        <p class="small-text">Wydane</p>
+                        <p style="font-size:1.8rem; font-weight:700; margin:4px 0; color:#ef4444;">{{ expense_total | round(2) }} zł</p>
+                    </div>
+                </div>
+                <div style="display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap:14px; margin-top:8px;">
+                    <div style="background:#eff6ff; border-radius:14px; padding:14px;">
+                        <p class="small-text">Pozostało</p>
+                        <p style="font-weight:700; margin:4px 0;">{{ remaining | round(2) }} zł</p>
+                    </div>
+                    <div style="background:#ecfdf5; border-radius:14px; padding:14px;">
+                        <p class="small-text">Wykorzystanie</p>
+                        <p style="font-weight:700; margin:4px 0;">{{ usage | round(1) }}%</p>
+                    </div>
+                    <div style="background:#f8fafc; border-radius:14px; padding:14px;">
+                        <p class="small-text">Zapis</p>
+                        <form action="/finanse/budget" method="post" style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:12px;">
+                            <input class="input-field" type="text" name="budget" value="{{ budget }}" placeholder="Kwota" style="flex:1 1 180px; min-width:120px;">
+                            <button type="submit" class="btn" style="flex:0 0 auto;">Ustaw</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <h2>Raporty</h2>
+            <div style="display:grid; gap:12px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+                    <span class="small-text">Suma wydatków</span>
+                    <strong>{{ report.total | round(2) }} zł</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+                    <span class="small-text">Ilość wpisów</span>
+                    <strong>{{ report.count }}</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+                    <span class="small-text">Średnia</span>
+                    <strong>{{ report.average | round(2) }} zł</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+                    <span class="small-text">Największy</span>
+                    <strong>{{ report.max | round(2) }} zł</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+                    <span class="small-text">Najmniejszy</span>
+                    <strong>{{ report.min | round(2) }} zł</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+    </section>
+
+    <section class="section">
+    <div class="panel-grid columns-2-1">
+        <div class="card">
+            <h2>Filtry</h2>
+            <form action="/finanse" method="get" class="form-grid">
+                <div class="form-row">
+                    <select name="category" class="select-field">
+                        <option value="" {% if not selected_category %}selected{% endif %}>Wszystkie</option>
+                        {% for category in categories %}
+                        <option value="{{ category }}" {% if selected_category == category %}selected{% endif %}>{{ category_labels[category] }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="date" name="start_date" value="{{ start_date }}" class="input-field">
+                </div>
+                <div class="form-row">
+                    <input type="date" name="end_date" value="{{ end_date }}" class="input-field">
+                    <div style="display:grid; gap:12px;">
+                        <input type="text" name="min_amount" placeholder="Min zł" value="{{ min_amount }}" class="input-field">
+                        <input type="text" name="max_amount" placeholder="Max zł" value="{{ max_amount }}" class="input-field">
+                    </div>
+                </div>
+                <button type="submit" class="btn">Zastosuj filtry</button>
+            </form>
+        </div>
+        <div class="card">
+            <h2>Kategorie</h2>
+            <ul style="list-style:none; padding:0; margin:0; display:grid; gap:12px;">
+                {% for category, total in category_totals.items() %}
+                <li style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 14px; border-radius:14px; background:#f8fafc;">
+                    <span>{{ category_labels.get(category, category) }}</span>
+                    <strong>{{ total | round(2) }} zł</strong>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    </section>
+
+    <section class="section">
+    <div class="card chart-panel">
+        <h2>Wykres wydatków miesiąc po miesiącu</h2>
+        <div style="display:grid; grid-template-columns: auto 1fr; gap:18px; align-items:end; padding-top:16px;">
+            <div class="chart-axis">
+                <span>{{ max_month_total | round(0) }}</span>
+                <span>{{ (max_month_total * 0.75) | round(0) }}</span>
+                <span>{{ (max_month_total * 0.5) | round(0) }}</span>
+                <span>{{ (max_month_total * 0.25) | round(0) }}</span>
+                <span>0</span>
+            </div>
+            <div class="chart-bars">
+                {% for month, total in month_totals.items() %}
+                <div class="chart-bar">
+                    <div class="chart-bar-fill" style="height:{{ (total / (max_month_total or 1) * 100) | round(0) }}%;"></div>
+                    <span class="chart-label">{{ month }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    </section>
+
+    <section class="section">
+    <div class="panel-grid columns-1-1">
+        <div class="card">
+            <h2>Top kategorie</h2>
+            <ol style="padding-left:18px; margin:0; display:grid; gap:12px;">
+                {% for category, total in top_categories %}
+                <li style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 14px; border-radius:14px; background:#f8fafc;">
+                    <span>{{ category_labels.get(category, category) }}</span>
+                    <strong>{{ total | round(2) }} zł</strong>
+                </li>
+                {% endfor %}
+            </ol>
+        </div>
+        <div class="card">
+            <h2>Dodaj wydatek</h2>
+            <form action="/finanse/add" method="post" class="form-grid">
+                <input class="input-field" type="text" name="title" placeholder="Nazwa wydatku">
+                <input class="input-field" type="text" name="amount" placeholder="Kwota zł">
+                <select class="select-field" name="category">
+                    {% for category in categories %}
+                    <option value="{{ category }}">{{ category_labels[category] }}</option>
+                    {% endfor %}
+                </select>
+                <input class="input-field" type="date" name="expense_date" value="{{ today }}">
+                <textarea class="textarea-field" name="note" placeholder="Notatka" rows="4"></textarea>
+                <button class="btn" type="submit">Dodaj wydatek</button>
+            </form>
+        </div>
+    </div>
+    </section>
+
+    <section class="section">
+    <div class="card">
+        <h2>Wydatki</h2>
+        <div style="overflow-x:auto;">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Tytuł</th>
+                        <th>Kategoria</th>
+                        <th>Kwota</th>
+                        <th>Notatka</th>
+                        <th>Akcje</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for expense in expenses %}
+                    <tr>
+                        <td>{{ expense.expense_date }}</td>
+                        <td>{{ expense.title }}</td>
+                        <td>{{ category_labels.get(expense.category, expense.category) }}</td>
+                        <td>{{ expense.amount | round(2) }} zł</td>
+                        <td>{{ expense.note }}</td>
+                        <td>
+                            <a href="/expenses/card/{{ expense.id }}" class="btn" style="background:#e0f2fe; color:#2563eb; box-shadow:none; padding:8px 12px; font-size:0.9rem;">Edytuj</a>
+                            <a href="/expenses/delete/{{ expense.id }}" class="btn" style="background:#fee2e2; color:#b91c1c; box-shadow:none; padding:8px 12px; font-size:0.9rem; margin-left:8px;">Usuń</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" style="padding:18px 16px; text-align:center; color:#64748b;">Brak wydatków do wyświetlenia.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

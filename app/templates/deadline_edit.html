@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Edytuj termin{% endblock %}
+{% block content %}
+    <h1>✏️ Edytuj termin</h1>
+
+    <form action="/deadlines/edit/{{ deadline.id }}" method="post" style="display:grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap:8px; margin-bottom:24px; background:white; padding:16px; border-radius:8px;">
+        <input type="text" name="title" placeholder="Nazwa terminu" value="{{ deadline.title }}" autofocus
+               style="min-width:200px; padding:10px; font-size:15px; border:1px solid #ccc; border-radius:6px;">
+        <input type="date" name="due_date" value="{{ deadline.due_date }}" style="padding:10px; font-size:15px; border:1px solid #ccc; border-radius:6px;">
+        <input type="text" name="note" placeholder="Notatka (opcjonalnie)" value="{{ deadline.note }}"
+               style="min-width:200px; padding:10px; font-size:15px; border:1px solid #ccc; border-radius:6px;">
+        <button type="submit" style="min-width:140px;">Zapisz</button>
+    </form>
+
+    <a href="/deadlines" class="btn">Powrót do terminów</a>
+{% endblock %}
