@@ -1,14 +1,82 @@
 {% extends "base.html" %}
 {% block title %}Strona główna{% endblock %}
 {% block content %}
-    <div style="background:white; border-radius:12px; padding:32px; box-shadow:0 1px 10px rgba(0,0,0,0.08);">
-        <h1 style="margin-top:0;">Witaj w panelu Campervana!</h1>
-        <p style="font-size:16px; color:#475569; line-height:1.6;">Tutaj możesz zarządzać zadaniami, usterkami, terminami i galerią zdjęć. Wybierz jedną z zakładek w górnym menu, aby rozpocząć.</p>
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-top:24px;">
-            <a href="/todo" style="display:block; padding:20px; border-radius:12px; background:#eef2ff; color:#1e40af; text-decoration:none; font-weight:700;">💡 Pomysły</a>
-            <a href="/issues" style="display:block; padding:20px; border-radius:12px; background:#f0fdf4; color:#166534; text-decoration:none; font-weight:700;">🔧 To-Do</a>
-            <a href="/deadlines" style="display:block; padding:20px; border-radius:12px; background:#fef3c7; color:#92400e; text-decoration:none; font-weight:700;">⏰ Terminy</a>
-            <a href="/gallery" style="display:block; padding:20px; border-radius:12px; background:#f8fafc; color:#0f172a; text-decoration:none; font-weight:700;">🖼️ Galeria</a>
+    <div class="shell">
+        <div class="card hero-card">
+            <div class="hero-grid">
+                <div>
+                    <span class="label-pill">Dashboard</span>
+                    <h1 class="page-title">
+                        <span class="page-title-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"></path><path d="M5 10.5V20h14V10.5"></path><path d="M9 20v-5h6v5"></path></svg></span>
+                        <span>Centrum dowodzenia Camperem</span>
+                    </h1>
+                </div>
+                <div class="card" style="padding:18px; background: rgba(255,255,255,0.7);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <strong>Przegląd</strong>
+                        <span class="label-pill">Aktualne</span>
+                    </div>
+                    <div style="display:grid; gap:10px;">
+                        <div style="display:flex; justify-content:space-between; color:#475569;">
+                            <span>Pomysły</span>
+                            <strong>14</strong>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; color:#475569;">
+                            <span>Terminy</span>
+                            <strong>3</strong>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; color:#475569;">
+                            <span>Podróże</span>
+                            <strong>2</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="module-grid">
+            <a href="/todo" class="module-card">
+                <div class="icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"></path><path d="M7 12h10"></path><path d="M10 17h4"></path></svg>
+                </div>
+                <strong>Pomysły</strong>
+                <span>Organizuj inspiracje i notatki.</span>
+            </a>
+            <a href="/issues" class="module-card">
+                <div class="icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M8 8h8"></path><path d="M8 12h8"></path><path d="M8 16h5"></path></svg>
+                </div>
+                <strong>To-Do</strong>
+                <span>Śledź kolejne kroki i zadania.</span>
+            </a>
+            <a href="/deadlines" class="module-card">
+                <div class="icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+                </div>
+                <strong>Terminy</strong>
+                <span>Nie przegap ważnych dat.</span>
+            </a>
+            <a href="/gallery" class="module-card">
+                <div class="icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M8 13l2-2 2 2 4-4"></path><circle cx="8.5" cy="9" r="1"></circle></svg>
+                </div>
+                <strong>Galeria</strong>
+                <span>Przechowuj zdjęcia i wspomnienia.</span>
+            </a>
+            <a href="/finanse" class="module-card">
+                <div class="icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"></path><path d="M7 15V9"></path><path d="M12 15V5"></path><path d="M17 15v-3"></path></svg>
+                </div>
+                <strong>Finanse</strong>
+                <span>Kontroluj przychody i wydatki.</span>
+            </a>
+            <a href="/podroze" class="module-card">
+                <div class="icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l4-4 3 3 5-6 6 8"></path><path d="M3 5h18"></path></svg>
+                </div>
+                <strong>Podróże</strong>
+                <span>Planuj wypady i śledź etapy.</span>
+            </a>
         </div>
     </div>
 {% endblock %}

@@ -1,7 +1,10 @@
 {% extends "base.html" %}
 {% block title %}To-Do{% endblock %}
 {% block content %}
-    <h1>🔧 To-Do</h1>
+    <h1 class="page-title">
+        <span class="page-title-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M8 8h8"></path><path d="M8 12h8"></path><path d="M8 16h5"></path></svg></span>
+        <span>To-Do</span>
+    </h1>
 
     <form action="/issues/add" method="post" enctype="multipart/form-data" style="display:grid; grid-template-columns: 1.6fr 1.4fr 1fr 1fr 1fr; gap:8px; margin-bottom:24px; background:white; padding:16px; border-radius:8px;">
         <input type="text" name="title" placeholder="Tytuł (np. Wymienić bezpiecznik lodówki)" autofocus

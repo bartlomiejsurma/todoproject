@@ -66,6 +66,126 @@ def home():
     return render_template("home.html", active_page="home")
 
 
+@app.route("/podroze", methods=["GET", "POST"])
+@login_required
+def podróze():
+    if request.method == "POST":
+        action = request.form.get("action")
+        if action == "add_trip":
+            title = request.form.get("title", "").strip()
+            destination = request.form.get("destination", "").strip()
+            start_date = request.form.get("start_date", "")
+            end_date = request.form.get("end_date", "")
+            note = request.form.get("note", "").strip()
+            kilometers = request.form.get("kilometers", "0").replace(",", ".")
+            try:
+                kilometers_value = float(kilometers)
+            except ValueError:
+                kilometers_value = 0.0
+            if title and destination and start_date and end_date:
+                db.add_trip(title, destination, start_date, end_date, note, kilometers_value)
+        elif action == "edit_trip":
+            trip_id = request.form.get("trip_id")
+            title = request.form.get("title", "").strip()
+            destination = request.form.get("destination", "").strip()
+            start_date = request.form.get("start_date", "")
+            end_date = request.form.get("end_date", "")
+            note = request.form.get("note", "").strip()
+            kilometers = request.form.get("kilometers", "0").replace(",", ".")
+            try:
+                kilometers_value = float(kilometers)
+            except ValueError:
+                kilometers_value = 0.0
+            if trip_id:
+                db.update_trip(trip_id, title=title or None, destination=destination or None, start_date=start_date or None, end_date=end_date or None, note=note, kilometers=kilometers_value)
+        elif action == "delete_trip":
+            trip_id = request.form.get("trip_id")
+            if trip_id:
+                db.delete_trip(trip_id)
+        elif action == "upload_image":
+            trip_id = request.form.get("trip_id")
+            image_file = request.files.get("trip_image")
+            if trip_id and image_file and image_file.filename:
+                image_name = save_attachment(image_file)
+                if image_name:
+                    db.update_trip(trip_id, image=image_name)
+        elif action == "add_place":
+            trip_id = request.form.get("trip_id")
+            name = request.form.get("place_name", "").strip()
+            visited = request.form.get("visited") == "on"
+            note = request.form.get("place_note", "").strip()
+            if trip_id and name:
+                db.add_trip_place(trip_id, name, 1 if visited else 0, note)
+        elif action == "add_expense":
+            trip_id = request.form.get("trip_id")
+            title = request.form.get("expense_title", "").strip()
+            amount = request.form.get("expense_amount", "0").replace(",", ".")
+            expense_date = request.form.get("expense_date", "")
+            category = request.form.get("expense_category", "").strip()
+            note = request.form.get("expense_note", "").strip()
+            try:
+                amount_value = float(amount)
+            except ValueError:
+                amount_value = 0.0
+            if trip_id and title and amount_value > 0 and expense_date:
+                db.add_trip_expense(trip_id, title, amount_value, expense_date, category, note)
+        elif action == "edit_expense":
+            expense_id = request.form.get("expense_id")
+            title = request.form.get("expense_title", "").strip()
+            amount = request.form.get("expense_amount", "0").replace(",", ".")
+            expense_date = request.form.get("expense_date", "")
+            category = request.form.get("expense_category", "").strip()
+            note = request.form.get("expense_note", "").strip()
+            try:
+                amount_value = float(amount)
+            except ValueError:
+                amount_value = None
+            if expense_id and title and amount_value is not None and expense_date:
+                db.update_trip_expense(expense_id, title=title, amount=amount_value, expense_date=expense_date, category=category, note=note)
+        elif action == "delete_expense":
+            expense_id = request.form.get("expense_id")
+            if expense_id:
+                db.delete_trip_expense(expense_id)
+        elif action == "toggle_place":
+            place_id = request.form.get("place_id")
+            if place_id:
+                db.toggle_trip_place(place_id)
+        return redirect(url_for("podróze"))
+
+    trips = db.get_all_trips()
+    trip_expense_totals = {}
+    for trip in trips:
+        trip_expenses = db.get_trip_expenses(trip["id"])
+        trip_expense_totals[trip["id"]] = sum(expense["amount"] for expense in trip_expenses)
+
+    selected_trip_id = request.args.get("trip_id")
+    selected_trip = None
+    selected_places = []
+    selected_expenses = []
+    if selected_trip_id:
+        selected_trip = db.get_trip(selected_trip_id)
+        if selected_trip:
+            selected_places = db.get_trip_places(selected_trip_id)
+            selected_expenses = db.get_trip_expenses(selected_trip_id)
+    if not selected_trip and trips:
+        selected_trip = trips[0]
+        selected_trip_id = str(selected_trip["id"])
+        selected_places = db.get_trip_places(selected_trip["id"])
+        selected_expenses = db.get_trip_expenses(selected_trip["id"])
+
+    return render_template(
+        "podroze.html",
+        active_page="podroze",
+        trips=trips,
+        trip_expense_totals=trip_expense_totals,
+        selected_trip=selected_trip,
+        selected_trip_id=selected_trip_id,
+        selected_places=selected_places,
+        selected_expenses=selected_expenses,
+        today=date.today().isoformat(),
+    )
+
+
 def save_attachment(file):
     if not file or file.filename == "":
         return ""
@@ -321,16 +441,32 @@ def finanse():
         min_amount=min_amount_val,
         max_amount=max_amount_val,
     )
-    budget = db.get_budget()
+    incomes = db.get_all_incomes()
     expense_total = db.get_expense_total(expenses)
-    remaining = db.get_remaining_budget(expenses, budget)
-    usage = db.get_budget_usage(expenses, budget)
+    income_total = db.get_income_total(incomes)
+    budget = income_total
+    remaining = budget - expense_total
+    usage = (expense_total / budget * 100) if budget else 0
     category_totals = db.get_expense_summary(expenses)
     month_totals = db.get_monthly_summary(expenses)
+    monthly_category_summary = db.get_monthly_category_summary(expenses)
+    monthly_income_summary = db.get_monthly_income_summary(incomes)
+    monthly_income_vs_expense_summary = db.get_monthly_income_vs_expense_summary(incomes, expenses)
     max_month_total = max(month_totals.values()) if month_totals else 0
+    max_income_total = max(monthly_income_summary.values()) if monthly_income_summary else 0
+    max_comparison_total = max(
+        [values["income"] for values in monthly_income_vs_expense_summary.values()] + [values["expense"] for values in monthly_income_vs_expense_summary.values()],
+        default=0,
+    )
     report = db.get_expense_reports(expenses)
     top_categories = db.get_top_categories(expenses)
     today = date.today().isoformat()
+    category_colors = {
+        "maintenance": "#3b82f6",
+        "parts_tools": "#8b5cf6",
+        "materials": "#10b981",
+        "other": "#f59e0b",
+    }
 
     return render_template(
         "finanse.html",
@@ -345,26 +481,27 @@ def finanse():
         max_amount=max_amount,
         budget=budget,
         expense_total=expense_total,
+        income_total=income_total,
         remaining=remaining,
         usage=usage,
         category_totals=category_totals,
         month_totals=month_totals,
+        monthly_category_summary=monthly_category_summary,
+        monthly_income_summary=monthly_income_summary,
+        monthly_income_vs_expense_summary=monthly_income_vs_expense_summary,
         max_month_total=max_month_total,
+        max_income_total=max_income_total,
+        max_comparison_total=max_comparison_total,
         report=report,
         top_categories=top_categories,
         today=today,
+        category_colors=category_colors,
     )
 
 
 @app.route("/finanse/budget", methods=["POST"])
 @login_required
 def update_budget():
-    amount = request.form.get("budget", "0").replace(",", ".")
-    try:
-        value = float(amount)
-    except ValueError:
-        value = 0.0
-    db.set_budget(value)
     return redirect(url_for("finanse"))
 
 
@@ -382,6 +519,22 @@ def add_expense():
         amount_value = 0.0
     if title and amount_value > 0 and expense_date:
         db.add_expense(title, amount_value, category, expense_date, note)
+    return redirect(url_for("finanse"))
+
+
+@app.route("/finanse/income", methods=["POST"])
+@login_required
+def add_income():
+    title = request.form.get("title", "").strip()
+    amount = request.form.get("amount", "0").replace(",", ".")
+    income_date = request.form.get("income_date")
+    note = request.form.get("note", "").strip()
+    try:
+        amount_value = float(amount)
+    except ValueError:
+        amount_value = 0.0
+    if title and amount_value > 0 and income_date:
+        db.add_income(title, amount_value, income_date, note)
     return redirect(url_for("finanse"))
 
 

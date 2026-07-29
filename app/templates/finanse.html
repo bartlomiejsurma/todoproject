@@ -1,24 +1,27 @@
 {% extends "base.html" %}
 {% block title %}Finanse{% endblock %}
 {% block content %}
-    <h1>💰 Finanse</h1>
+    <h1 class="page-title">
+        <span class="page-title-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"></path><path d="M7 15V9"></path><path d="M12 15V5"></path><path d="M17 15v-3"></path></svg></span>
+        <span>Finanse</span>
+    </h1>
 
     <section class="section">
     <div class="panel-grid columns-2">
         <div class="card">
             <h2>Budżet</h2>
             <div style="display:grid; gap:16px;">
-                <div style="display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap;">
-                    <div>
-                        <p class="small-text">Aktualny budżet</p>
-                        <p style="font-size:1.8rem; font-weight:700; margin:4px 0;">{{ budget | round(2) }} zł</p>
-                    </div>
-                    <div>
+                <div style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:14px;">
+                    <div style="background:#f8fafc; border-radius:14px; padding:16px;">
                         <p class="small-text">Wydane</p>
-                        <p style="font-size:1.8rem; font-weight:700; margin:4px 0; color:#ef4444;">{{ expense_total | round(2) }} zł</p>
+                        <p style="font-size:1.6rem; font-weight:700; margin:6px 0 0; color:#ef4444;">{{ expense_total | round(2) }} zł</p>
+                    </div>
+                    <div style="background:#f0fdf4; border-radius:14px; padding:16px;">
+                        <p class="small-text">Wpływy</p>
+                        <p style="font-size:1.6rem; font-weight:700; margin:6px 0 0; color:#10b981;">{{ income_total | round(2) }} zł</p>
                     </div>
                 </div>
-                <div style="display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap:14px; margin-top:8px;">
+                <div style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:14px; margin-top:4px;">
                     <div style="background:#eff6ff; border-radius:14px; padding:14px;">
                         <p class="small-text">Pozostało</p>
                         <p style="font-weight:700; margin:4px 0;">{{ remaining | round(2) }} zł</p>
@@ -26,13 +29,6 @@
                     <div style="background:#ecfdf5; border-radius:14px; padding:14px;">
                         <p class="small-text">Wykorzystanie</p>
                         <p style="font-weight:700; margin:4px 0;">{{ usage | round(1) }}%</p>
-                    </div>
-                    <div style="background:#f8fafc; border-radius:14px; padding:14px;">
-                        <p class="small-text">Zapis</p>
-                        <form action="/finanse/budget" method="post" style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:12px;">
-                            <input class="input-field" type="text" name="budget" value="{{ budget }}" placeholder="Kwota" style="flex:1 1 180px; min-width:120px;">
-                            <button type="submit" class="btn" style="flex:0 0 auto;">Ustaw</button>
-                        </form>
                     </div>
                 </div>
             </div>
@@ -105,6 +101,65 @@
 
     <section class="section">
     <div class="card chart-panel">
+        <h2>Wykres wpływów miesiąc po miesiącu</h2>
+        <div style="display:grid; grid-template-columns: auto 1fr; gap:18px; align-items:end; padding-top:16px;">
+            <div class="chart-axis">
+                <span>{{ max_income_total | round(0) }}</span>
+                <span>{{ (max_income_total * 0.75) | round(0) }}</span>
+                <span>{{ (max_income_total * 0.5) | round(0) }}</span>
+                <span>{{ (max_income_total * 0.25) | round(0) }}</span>
+                <span>0</span>
+            </div>
+            <div class="chart-bars">
+                {% for month, total in monthly_income_summary.items() %}
+                <div class="chart-bar">
+                    <div class="chart-bar-stack chart-income-stack" style="height:{{ (total / (max_income_total or 1) * 100) | round(0) }}%;"></div>
+                    <span class="chart-label">{{ month }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    </section>
+
+    <section class="section">
+    <div class="card chart-panel">
+        <h2>Wykres wpływy vs wydatki</h2>
+        <div style="display:grid; grid-template-columns: auto 1fr; gap:18px; align-items:end; padding-top:16px;">
+            <div class="chart-axis">
+                <span>100%</span>
+                <span>75%</span>
+                <span>50%</span>
+                <span>25%</span>
+                <span>0%</span>
+            </div>
+            <div class="chart-bars">
+                {% for month, values in monthly_income_vs_expense_summary.items() %}
+                <div class="chart-bar">
+                    <div class="chart-bar-stack comparison-stack" style="height:100%;">
+                        <div class="chart-segment comparison-income" style="height:{{ (values.income / (values.income + values.expense + 0.0001) * 100) | round(2) }}%;"></div>
+                        <div class="chart-segment comparison-expense" style="height:{{ (values.expense / (values.income + values.expense + 0.0001) * 100) | round(2) }}%;"></div>
+                    </div>
+                    <span class="chart-label">{{ month }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        <div style="display:flex; flex-wrap:wrap; gap:12px; margin-top:18px;">
+            <div style="display:flex; align-items:center; gap:8px; font-size:0.9rem; color:#475569;">
+                <span style="width:12px; height:12px; border-radius:999px; display:inline-block; background:#10b981;"></span>
+                <span>Wpływy</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; font-size:0.9rem; color:#475569;">
+                <span style="width:12px; height:12px; border-radius:999px; display:inline-block; background:#ef4444;"></span>
+                <span>Wydatki</span>
+            </div>
+        </div>
+    </div>
+    </section>
+
+    <section class="section">
+    <div class="card chart-panel">
         <h2>Wykres wydatków miesiąc po miesiącu</h2>
         <div style="display:grid; grid-template-columns: auto 1fr; gap:18px; align-items:end; padding-top:16px;">
             <div class="chart-axis">
@@ -116,12 +171,25 @@
             </div>
             <div class="chart-bars">
                 {% for month, total in month_totals.items() %}
+                {% set segments = monthly_category_summary.get(month, []) %}
                 <div class="chart-bar">
-                    <div class="chart-bar-fill" style="height:{{ (total / (max_month_total or 1) * 100) | round(0) }}%;"></div>
+                    <div class="chart-bar-stack" style="height:{{ (total / (max_month_total or 1) * 100) | round(0) }}%;">
+                        {% for category, category_total in segments %}
+                        <div class="chart-segment" style="height:{{ (category_total / total * 100) | round(2) }}%; background:{{ category_colors.get(category, '#64748b') }};"></div>
+                        {% endfor %}
+                    </div>
                     <span class="chart-label">{{ month }}</span>
                 </div>
                 {% endfor %}
             </div>
+        </div>
+        <div style="display:flex; flex-wrap:wrap; gap:12px; margin-top:18px;">
+            {% for category in categories %}
+            <div style="display:flex; align-items:center; gap:8px; font-size:0.9rem; color:#475569;">
+                <span style="width:12px; height:12px; border-radius:999px; display:inline-block; background:{{ category_colors.get(category, '#64748b') }};"></span>
+                <span>{{ category_labels.get(category, category) }}</span>
+            </div>
+            {% endfor %}
         </div>
     </div>
     </section>
@@ -129,15 +197,14 @@
     <section class="section">
     <div class="panel-grid columns-1-1">
         <div class="card">
-            <h2>Top kategorie</h2>
-            <ol style="padding-left:18px; margin:0; display:grid; gap:12px;">
-                {% for category, total in top_categories %}
-                <li style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 14px; border-radius:14px; background:#f8fafc;">
-                    <span>{{ category_labels.get(category, category) }}</span>
-                    <strong>{{ total | round(2) }} zł</strong>
-                </li>
-                {% endfor %}
-            </ol>
+            <h2>Dodaj wpływ</h2>
+            <form action="/finanse/income" method="post" class="form-grid">
+                <input class="input-field" type="text" name="title" placeholder="Nazwa wpływu">
+                <input class="input-field" type="text" name="amount" placeholder="Kwota zł">
+                <input class="input-field" type="date" name="income_date" value="{{ today }}">
+                <textarea class="textarea-field" name="note" placeholder="Notatka" rows="4"></textarea>
+                <button class="btn" type="submit">Dodaj wpływ</button>
+            </form>
         </div>
         <div class="card">
             <h2>Dodaj wydatek</h2>

@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+{% block title %}Podróże{% endblock %}
+{% block content %}
+    <h1 class="page-title">
+        <span class="page-title-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l4-4 3 3 5-6 6 8"></path><path d="M3 5h18"></path></svg></span>
+        <span>Podróże</span>
+    </h1>
+
+    <section class="section">
+    <div class="panel-grid columns-2-1">
+        <div class="card">
+            <h2>Dodaj podróż</h2>
+            <form action="/podroze" method="post" class="form-grid">
+                <input type="hidden" name="action" value="add_trip">
+                <input class="input-field" type="text" name="title" placeholder="Nazwa podróży" required>
+                <input class="input-field" type="text" name="destination" placeholder="Cel podróży" required>
+                <div class="form-row">
+                    <input class="input-field" type="date" name="start_date" required>
+                    <input class="input-field" type="date" name="end_date" required>
+                </div>
+                <textarea class="textarea-field" name="note" placeholder="Notatka" rows="4"></textarea>
+                <button class="btn" type="submit">Dodaj podróż</button>
+            </form>
+        </div>
+        <div class="card">
+            <h2>Wybierz podróż</h2>
+            {% if trips %}
+            <div style="display:grid; gap:12px;">
+                {% for trip in trips %}
+                <a href="/podroze?trip_id={{ trip.id }}" style="display:block; padding:14px 16px; border-radius:14px; background:#f8fafc; color:#111827; text-decoration:none;">
+                    <div style="display:flex; justify-content:space-between; align-items:start; gap:10px; flex-wrap:wrap;">
+                        <div>
+                            <strong>{{ trip.title }}</strong><br>
+                            <span class="small-text">{{ trip.destination }} · {{ trip.start_date }} → {{ trip.end_date }}</span>
+                        </div>
+                        <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+                            <span class="label-pill">{{ trip.kilometers|default(0)|round(1) }} km</span>
+                            <span class="label-pill">{{ trip_expense_totals.get(trip.id, 0)|round(2) }} zł</span>
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="small-text">Brak podróży. Dodaj pierwszą podróż.</p>
+            {% endif %}
+        </div>
+    </div>
+    </section>
+
+    {% if selected_trip %}
+    <section class="section">
+    <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:start; gap:16px; flex-wrap:wrap;">
+            <div>
+                <h2 style="margin-bottom:6px;">{{ selected_trip.title }}</h2>
+                <p class="small-text">{{ selected_trip.destination }} · {{ selected_trip.start_date }} → {{ selected_trip.end_date }}</p>
+                {% if selected_trip.note %}
+                <p style="margin-top:10px;">{{ selected_trip.note }}</p>
+                {% endif %}
+            </div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <form action="/podroze" method="post" onsubmit="return confirm('Czy na pewno chcesz usunąć tę podróż?');">
+                    <input type="hidden" name="action" value="delete_trip">
+                    <input type="hidden" name="trip_id" value="{{ selected_trip.id }}">
+                    <button class="btn" type="submit" style="background:#d97706;">Usuń podróż</button>
+                </form>
+            </div>
+        </div>
+        <form action="/podroze" method="post" class="form-grid" style="margin-top:18px;">
+            <input type="hidden" name="action" value="edit_trip">
+            <input type="hidden" name="trip_id" value="{{ selected_trip.id }}">
+            <div class="form-row">
+                <input class="input-field" type="text" name="title" value="{{ selected_trip.title }}" placeholder="Nazwa podróży">
+                <input class="input-field" type="text" name="destination" value="{{ selected_trip.destination }}" placeholder="Cel podróży">
+            </div>
+            <div class="form-row">
+                <input class="input-field" type="date" name="start_date" value="{{ selected_trip.start_date }}">
+                <input class="input-field" type="date" name="end_date" value="{{ selected_trip.end_date }}">
+            </div>
+            <div class="form-row">
+                <input class="input-field" type="text" name="kilometers" value="{{ selected_trip.kilometers|default(0)|round(1) }}" placeholder="Kilometry">
+                <input class="input-field" type="text" name="note" value="{{ selected_trip.note }}" placeholder="Opis podróży">
+            </div>
+            <button class="btn" type="submit">Zapisz zmiany</button>
+        </form>
+        {% if selected_trip.image %}
+        <div style="margin-top:16px;">
+            <img src="/static/attachments/{{ selected_trip.image }}" alt="Zdjęcie podróży" style="max-width:100%; max-height:280px; border-radius:16px; object-fit:cover;">
+        </div>
+        {% endif %}
+        <form action="/podroze" method="post" enctype="multipart/form-data" class="form-grid" style="margin-top:16px;">
+            <input type="hidden" name="action" value="upload_image">
+            <input type="hidden" name="trip_id" value="{{ selected_trip.id }}">
+            <input class="input-field" type="file" name="trip_image">
+            <button class="btn" type="submit">Dodaj zdjęcie</button>
+        </form>
+    </div>
+    </section>
+
+    <section class="section">
+    <div class="panel-grid columns-1-1">
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px;">
+                <h2 style="margin-bottom:0;">Plan podróży</h2>
+                <span class="label-pill">{{ selected_trip.kilometers|default(0)|round(1) }} km</span>
+            </div>
+
+            <div style="display:grid; gap:12px; margin-bottom:16px;">
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:16px; padding:14px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+                        <strong>Plan podróży</strong>
+                        <span id="places-progress-pill" class="label-pill" data-total="{{ selected_places|length }}" data-visited="{{ selected_places|selectattr('visited')|list|length }}">{{ selected_places|selectattr('visited')|list|length }} / {{ selected_places|length }} odwiedzonych</span>
+                    </div>
+                    <div style="margin-top:10px; height:10px; border-radius:999px; background:#e2e8f0; overflow:hidden;">
+                        {% set visited_count = selected_places|selectattr('visited')|list|length %}
+                        {% set total_places = selected_places|length %}
+                        {% if total_places %}
+                        <div id="places-progress-bar" style="height:100%; width:{{ (visited_count / total_places * 100) | round(0) }}%; background:linear-gradient(90deg, #34d399 0%, #2563eb 100%);"></div>
+                        {% else %}
+                        <div id="places-progress-bar" style="height:100%; width:0%; background:#cbd5e1;"></div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <form action="/podroze" method="post" class="form-grid">
+                <input type="hidden" name="action" value="add_place">
+                <input type="hidden" name="trip_id" value="{{ selected_trip.id }}">
+                <div class="form-row">
+                    <input class="input-field" type="text" name="place_name" placeholder="Nazwa miejsca">
+                    <label style="display:flex; align-items:center; gap:8px; color:#475569; padding:14px 0;">
+                        <input type="checkbox" name="visited"> Odwiedzone
+                    </label>
+                </div>
+                <textarea class="textarea-field" name="place_note" placeholder="Notatka" rows="3"></textarea>
+                <button class="btn" type="submit">Dodaj miejsce</button>
+            </form>
+            <div style="display:grid; gap:10px; margin-top:16px;">
+                {% for place in selected_places %}
+                <form action="/podroze" method="post" class="place-toggle-form" style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 14px; border-radius:14px; background:#f8fafc; border:1px solid #e2e8f0;">
+                    <input type="hidden" name="action" value="toggle_place">
+                    <input type="hidden" name="place_id" value="{{ place.id }}">
+                    <div>
+                        <strong>{{ place.name }}</strong>
+                        {% if place.note %}<div class="small-text">{{ place.note }}</div>{% endif %}
+                    </div>
+                    <button class="btn" type="submit" data-visited="{{ 'true' if place.visited else 'false' }}" style="padding:8px 12px; {% if place.visited %}background:#10b981;{% else %}background:#64748b;{% endif %}">
+                        {% if place.visited %}Odwiedzone{% else %}Do odwiedzenia{% endif %}
+                    </button>
+                </form>
+                {% else %}
+                <p class="small-text">Brak miejsc do wyświetlenia.</p>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="card">
+            <h2>Wydatki podróży</h2>
+            <form action="/podroze" method="post" class="form-grid">
+                <input type="hidden" name="action" value="add_expense">
+                <input type="hidden" name="trip_id" value="{{ selected_trip.id }}">
+                <input class="input-field" type="text" name="expense_title" placeholder="Nazwa wydatku">
+                <input class="input-field" type="text" name="expense_amount" placeholder="Kwota zł">
+                <div class="form-row">
+                    <input class="input-field" type="date" name="expense_date" value="{{ today }}">
+                    <input class="input-field" type="text" name="expense_category" placeholder="Kategoria">
+                </div>
+                <textarea class="textarea-field" name="expense_note" placeholder="Notatka" rows="3"></textarea>
+                <button class="btn" type="submit">Dodaj wydatek</button>
+            </form>
+            <div style="display:grid; gap:10px; margin-top:16px;">
+                {% for expense in selected_expenses %}
+                <div style="display:grid; gap:10px; padding:12px 14px; border-radius:14px; background:#f8fafc;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+                        <div>
+                            <strong>{{ expense.title }}</strong>
+                            {% if expense.category %}<div class="small-text">{{ expense.category }}</div>{% endif %}
+                        </div>
+                        <div style="text-align:right;">
+                            <strong>{{ expense.amount | round(2) }} zł</strong>
+                            <div class="small-text">{{ expense.expense_date }}</div>
+                        </div>
+                    </div>
+                    <form action="/podroze" method="post" class="form-grid" style="margin-top:4px;">
+                        <input type="hidden" name="action" value="edit_expense">
+                        <input type="hidden" name="expense_id" value="{{ expense.id }}">
+                        <div class="form-row">
+                            <input class="input-field" type="text" name="expense_title" value="{{ expense.title }}" placeholder="Nazwa wydatku">
+                            <input class="input-field" type="text" name="expense_amount" value="{{ expense.amount }}" placeholder="Kwota zł">
+                        </div>
+                        <div class="form-row">
+                            <input class="input-field" type="date" name="expense_date" value="{{ expense.expense_date }}">
+                            <input class="input-field" type="text" name="expense_category" value="{{ expense.category }}" placeholder="Kategoria">
+                        </div>
+                        <textarea class="textarea-field" name="expense_note" placeholder="Notatka" rows="2">{{ expense.note }}</textarea>
+                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                            <button class="btn" type="submit">Zapisz</button>
+                            <button class="btn" type="submit" formaction="/podroze" formmethod="post" style="background:#ef4444;" name="action" value="delete_expense">Usuń</button>
+                        </div>
+                    </form>
+                </div>
+                {% else %}
+                <p class="small-text">Brak wydatków do wyświetlenia.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    </section>
+
+    <section class="section">
+    <div class="card">
+        <h2>Co jeszcze można dodać</h2>
+        <ul style="margin:0; padding-left:20px; color:#475569; line-height:1.6;">
+            <li>zdjęcia z podróży</li>
+            <li>notatki o atrakcjach</li>
+            <li>lista rzeczy do spakowania</li>
+            <li>mapę podróży w przyszłości</li>
+        </ul>
+        <p class="small-text" style="margin-top:12px;">W przyszłości można dodać mapę śledzącą wszystkie podróże w jednym miejscu.</p>
+    </div>
+    </section>
+    {% endif %}
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('form.place-toggle-form').forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                event.preventDefault();
+
+                const button = form.querySelector('button[type="submit"]');
+                if (!button) {
+                    return;
+                }
+
+                const wasVisited = button.dataset.visited === 'true';
+                const formData = new FormData(form);
+                const progressPill = document.getElementById('places-progress-pill');
+                const progressBar = document.getElementById('places-progress-bar');
+
+                button.disabled = true;
+                button.textContent = '…';
+
+                fetch('/podroze', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(function (response) {
+                    if (!response.ok) {
+                        throw new Error('toggle failed');
+                    }
+
+                    const nextVisited = !wasVisited;
+                    button.dataset.visited = String(nextVisited);
+                    button.textContent = nextVisited ? 'Odwiedzone' : 'Do odwiedzenia';
+                    button.style.background = nextVisited ? '#10b981' : '#64748b';
+
+                    if (progressPill && progressBar) {
+                        const allForms = document.querySelectorAll('form.place-toggle-form');
+                        const visitedCount = Array.from(allForms).filter(function (item) {
+                            return item.querySelector('button[type="submit"]').dataset.visited === 'true';
+                        }).length;
+                        const totalCount = allForms.length;
+                        progressPill.textContent = visitedCount + ' / ' + totalCount + ' odwiedzonych';
+                        progressPill.dataset.visited = String(visitedCount);
+                        progressPill.dataset.total = String(totalCount);
+
+                        if (totalCount > 0) {
+                            const percent = Math.round((visitedCount / totalCount) * 100);
+                            progressBar.style.width = percent + '%';
+                        } else {
+                            progressBar.style.width = '0%';
+                        }
+                    }
+                })
+                .catch(function () {
+                    button.textContent = wasVisited ? 'Odwiedzone' : 'Do odwiedzenia';
+                    button.style.background = wasVisited ? '#10b981' : '#64748b';
+                })
+                .finally(function () {
+                    button.disabled = false;
+                });
+            });
+        });
+    });
+    </script>
+{% endblock %}

@@ -1,7 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Terminy{% endblock %}
 {% block content %}
-    <h1>⏰ Terminy</h1>
+    <h1 class="page-title">
+        <span class="page-title-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></span>
+        <span>Terminy</span>
+    </h1>
 
     <form action="/deadlines/add" method="post" style="display:grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap:8px; margin-bottom:24px; background:white; padding:16px; border-radius:8px;">
         <input type="text" name="title" placeholder="Nazwa terminu" autofocus

@@ -17,6 +17,7 @@ DB_FILE = os.environ.get("DB_FILE", "camper.db")
 def get_connection():
     """Otwiera połączenie z bazą danych."""
     conn = sqlite3.connect(DB_FILE)
+    conn.execute("PRAGMA foreign_keys = ON")
     # Dzięki temu wyniki zapytań zachowują się jak słowniki (dostęp po nazwie
     # kolumny, np. row["text"]), a nie tylko po numerze indeksu.
     conn.row_factory = sqlite3.Row
@@ -58,6 +59,16 @@ def init_db():
         )
     """)
     conn.execute("""
+        CREATE TABLE IF NOT EXISTS incomes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            amount REAL NOT NULL,
+            income_date TEXT NOT NULL,
+            note TEXT DEFAULT '',
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    conn.execute("""
         CREATE TABLE IF NOT EXISTS budget (
             id INTEGER PRIMARY KEY CHECK (id = 1),
             amount REAL NOT NULL DEFAULT 0
@@ -72,12 +83,51 @@ def init_db():
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS trips (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            destination TEXT NOT NULL,
+            start_date TEXT NOT NULL,
+            end_date TEXT NOT NULL,
+            note TEXT DEFAULT '',
+            kilometers REAL NOT NULL DEFAULT 0,
+            image TEXT DEFAULT '',
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS trip_places (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            trip_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            visited INTEGER NOT NULL DEFAULT 0,
+            note TEXT DEFAULT '',
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(trip_id) REFERENCES trips(id) ON DELETE CASCADE
+        )
+    """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS trip_expenses (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            trip_id INTEGER NOT NULL,
+            title TEXT NOT NULL,
+            amount REAL NOT NULL,
+            expense_date TEXT NOT NULL,
+            category TEXT DEFAULT '',
+            note TEXT DEFAULT '',
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(trip_id) REFERENCES trips(id) ON DELETE CASCADE
+        )
+    """)
     conn.commit()
     ensure_task_category_column(conn)
     ensure_task_description_column(conn)
     ensure_task_image_column(conn)
     ensure_issue_category_column(conn)
     ensure_issue_image_column(conn)
+    ensure_trip_kilometers_column(conn)
+    ensure_trip_image_column(conn)
     conn.close()
 
 
@@ -128,6 +178,22 @@ def ensure_issue_category_column(conn):
         conn.execute(
             "ALTER TABLE issues ADD COLUMN category TEXT NOT NULL DEFAULT 'others'"
         )
+        conn.commit()
+
+
+def ensure_trip_kilometers_column(conn):
+    """Dodaje kolumnę kilometers do tabeli trips, jeśli jej brak."""
+    columns = [row[1] for row in conn.execute("PRAGMA table_info(trips)").fetchall()]
+    if "kilometers" not in columns:
+        conn.execute("ALTER TABLE trips ADD COLUMN kilometers REAL NOT NULL DEFAULT 0")
+        conn.commit()
+
+
+def ensure_trip_image_column(conn):
+    """Dodaje kolumnę image do tabeli trips, jeśli jej brak."""
+    columns = [row[1] for row in conn.execute("PRAGMA table_info(trips)").fetchall()]
+    if "image" not in columns:
+        conn.execute("ALTER TABLE trips ADD COLUMN image TEXT NOT NULL DEFAULT ''")
         conn.commit()
 
 
@@ -197,6 +263,155 @@ def delete_task(task_id):
     conn.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
     conn.commit()
     conn.close()
+
+
+def add_trip(title, destination, start_date, end_date, note="", kilometers=0.0, image=""):
+    conn = get_connection()
+    cursor = conn.execute(
+        "INSERT INTO trips (title, destination, start_date, end_date, note, kilometers, image) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (title, destination, start_date, end_date, note, kilometers, image),
+    )
+    conn.commit()
+    trip_id = cursor.lastrowid
+    conn.close()
+    return trip_id
+
+
+def update_trip(trip_id, title=None, destination=None, start_date=None, end_date=None, note=None, kilometers=None, image=None):
+    conn = get_connection()
+    updates = []
+    values = []
+    if title is not None:
+        updates.append("title = ?")
+        values.append(title)
+    if destination is not None:
+        updates.append("destination = ?")
+        values.append(destination)
+    if start_date is not None:
+        updates.append("start_date = ?")
+        values.append(start_date)
+    if end_date is not None:
+        updates.append("end_date = ?")
+        values.append(end_date)
+    if note is not None:
+        updates.append("note = ?")
+        values.append(note)
+    if kilometers is not None:
+        updates.append("kilometers = ?")
+        values.append(kilometers)
+    if image is not None:
+        updates.append("image = ?")
+        values.append(image)
+    if updates:
+        values.append(trip_id)
+        conn.execute(f"UPDATE trips SET {', '.join(updates)} WHERE id = ?", values)
+    conn.commit()
+    conn.close()
+
+
+def delete_trip(trip_id):
+    conn = get_connection()
+    conn.execute("DELETE FROM trips WHERE id = ?", (trip_id,))
+    conn.commit()
+    conn.close()
+
+
+def get_all_trips():
+    conn = get_connection()
+    rows = conn.execute("SELECT * FROM trips ORDER BY start_date DESC, id DESC").fetchall()
+    conn.close()
+    return rows
+
+
+def get_trip(trip_id):
+    conn = get_connection()
+    row = conn.execute("SELECT * FROM trips WHERE id = ?", (trip_id,)).fetchone()
+    conn.close()
+    return row
+
+
+def add_trip_place(trip_id, name, visited=0, note=""):
+    conn = get_connection()
+    cursor = conn.execute(
+        "INSERT INTO trip_places (trip_id, name, visited, note) VALUES (?, ?, ?, ?)",
+        (trip_id, name, int(visited), note),
+    )
+    conn.commit()
+    place_id = cursor.lastrowid
+    conn.close()
+    return place_id
+
+
+def get_trip_places(trip_id):
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT * FROM trip_places WHERE trip_id = ? ORDER BY id ASC",
+        (trip_id,),
+    ).fetchall()
+    conn.close()
+    return rows
+
+
+def toggle_trip_place(place_id):
+    conn = get_connection()
+    conn.execute("UPDATE trip_places SET visited = NOT visited WHERE id = ?", (place_id,))
+    conn.commit()
+    conn.close()
+
+
+def add_trip_expense(trip_id, title, amount, expense_date, category="", note=""):
+    conn = get_connection()
+    cursor = conn.execute(
+        "INSERT INTO trip_expenses (trip_id, title, amount, expense_date, category, note) VALUES (?, ?, ?, ?, ?, ?)",
+        (trip_id, title, amount, expense_date, category, note),
+    )
+    conn.commit()
+    expense_id = cursor.lastrowid
+    conn.close()
+    return expense_id
+
+
+def update_trip_expense(expense_id, title=None, amount=None, expense_date=None, category=None, note=None):
+    conn = get_connection()
+    updates = []
+    values = []
+    if title is not None:
+        updates.append("title = ?")
+        values.append(title)
+    if amount is not None:
+        updates.append("amount = ?")
+        values.append(amount)
+    if expense_date is not None:
+        updates.append("expense_date = ?")
+        values.append(expense_date)
+    if category is not None:
+        updates.append("category = ?")
+        values.append(category)
+    if note is not None:
+        updates.append("note = ?")
+        values.append(note)
+    if updates:
+        values.append(expense_id)
+        conn.execute(f"UPDATE trip_expenses SET {', '.join(updates)} WHERE id = ?", values)
+    conn.commit()
+    conn.close()
+
+
+def delete_trip_expense(expense_id):
+    conn = get_connection()
+    conn.execute("DELETE FROM trip_expenses WHERE id = ?", (expense_id,))
+    conn.commit()
+    conn.close()
+
+
+def get_trip_expenses(trip_id):
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT * FROM trip_expenses WHERE trip_id = ? ORDER BY expense_date DESC, id DESC",
+        (trip_id,),
+    ).fetchall()
+    conn.close()
+    return rows
 
 
 # --- Funkcje do obsługi usterek/pomysłów (issues) ---
@@ -354,6 +569,31 @@ def delete_expense(expense_id):
     conn.close()
 
 
+def add_income(title, amount, income_date=None, note=""):
+    if not income_date:
+        income_date = date.today().isoformat()
+    conn = get_connection()
+    conn.execute(
+        "INSERT INTO incomes (title, amount, income_date, note) VALUES (?, ?, ?, ?)",
+        (title, amount, income_date, note),
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_all_incomes():
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT * FROM incomes ORDER BY income_date DESC, id DESC"
+    ).fetchall()
+    conn.close()
+    return rows
+
+
+def get_income_total(incomes):
+    return sum(float(item["amount"]) for item in incomes)
+
+
 def get_budget():
     conn = get_connection()
     row = conn.execute("SELECT amount FROM budget WHERE id = 1").fetchone()
@@ -378,11 +618,51 @@ def get_expense_summary(expenses):
     return totals
 
 
+def get_monthly_category_summary(expenses):
+    monthly = {}
+    for expense in expenses:
+        month = expense["expense_date"][:7]
+        category = expense["category"]
+        month_totals = monthly.setdefault(month, {})
+        month_totals[category] = month_totals.get(category, 0.0) + float(expense["amount"])
+
+    return {
+        month: [
+            (category, totals[category])
+            for category in sorted(totals, key=lambda item: totals[item], reverse=True)
+        ]
+        for month, totals in sorted(monthly.items())
+    }
+
+
 def get_monthly_summary(expenses):
     monthly = {}
     for expense in expenses:
         month = expense["expense_date"][:7]
         monthly[month] = monthly.get(month, 0.0) + float(expense["amount"])
+    return dict(sorted(monthly.items()))
+
+
+def get_monthly_income_summary(incomes):
+    monthly = {}
+    for income in incomes:
+        month = income["income_date"][:7]
+        monthly[month] = monthly.get(month, 0.0) + float(income["amount"])
+    return dict(sorted(monthly.items()))
+
+
+def get_monthly_income_vs_expense_summary(incomes, expenses):
+    monthly = {}
+    for income in incomes:
+        month = income["income_date"][:7]
+        monthly.setdefault(month, {"income": 0.0, "expense": 0.0})
+        monthly[month]["income"] += float(income["amount"])
+
+    for expense in expenses:
+        month = expense["expense_date"][:7]
+        monthly.setdefault(month, {"income": 0.0, "expense": 0.0})
+        monthly[month]["expense"] += float(expense["amount"])
+
     return dict(sorted(monthly.items()))
 
 
