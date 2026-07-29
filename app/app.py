@@ -56,7 +56,7 @@ def logout():
 @login_required
 def index():
     tasks = db.get_all_tasks()
-    return render_template("index.html", tasks=tasks)
+    return render_template("index.html", tasks=tasks, active_page="todo")
 
 
 @app.route("/add", methods=["POST"])
@@ -80,6 +80,42 @@ def toggle_task(task_id):
 def delete_task(task_id):
     db.delete_task(task_id)
     return redirect(url_for("index"))
+
+
+@app.route("/issues")
+@login_required
+def issues():
+    all_issues = db.get_all_issues()
+    columns = {
+        "todo": [i for i in all_issues if i["status"] == "todo"],
+        "doing": [i for i in all_issues if i["status"] == "doing"],
+        "done": [i for i in all_issues if i["status"] == "done"],
+    }
+    return render_template("issues.html", columns=columns, active_page="issues")
+
+
+@app.route("/issues/add", methods=["POST"])
+@login_required
+def add_issue():
+    title = request.form.get("title", "").strip()
+    description = request.form.get("description", "").strip()
+    if title:
+        db.add_issue(title, description)
+    return redirect(url_for("issues"))
+
+
+@app.route("/issues/advance/<int:issue_id>")
+@login_required
+def advance_issue(issue_id):
+    db.advance_issue(issue_id)
+    return redirect(url_for("issues"))
+
+
+@app.route("/issues/delete/<int:issue_id>")
+@login_required
+def delete_issue(issue_id):
+    db.delete_issue(issue_id)
+    return redirect(url_for("issues"))
 
 
 if __name__ == "__main__":

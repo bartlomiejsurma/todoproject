@@ -34,6 +34,15 @@ def init_db():
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS issues (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            description TEXT DEFAULT '',
+            status TEXT NOT NULL DEFAULT 'todo',
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
     conn.commit()
     conn.close()
 
@@ -66,5 +75,48 @@ def toggle_task(task_id):
 def delete_task(task_id):
     conn = get_connection()
     conn.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+    conn.commit()
+    conn.close()
+
+
+# --- Funkcje do obsługi usterek/pomysłów (issues) ---
+
+# Kolejność statusów - używana do przycisku "przenieś dalej"
+ISSUE_STATUSES = ["todo", "doing", "done"]
+
+
+def get_all_issues():
+    conn = get_connection()
+    rows = conn.execute("SELECT * FROM issues ORDER BY id DESC").fetchall()
+    conn.close()
+    return rows
+
+
+def add_issue(title, description=""):
+    conn = get_connection()
+    conn.execute(
+        "INSERT INTO issues (title, description, status) VALUES (?, ?, 'todo')",
+        (title, description),
+    )
+    conn.commit()
+    conn.close()
+
+
+def advance_issue(issue_id):
+    """Przesuwa kartę do następnego statusu (todo -> doing -> done)."""
+    conn = get_connection()
+    row = conn.execute("SELECT status FROM issues WHERE id = ?", (issue_id,)).fetchone()
+    if row:
+        current_index = ISSUE_STATUSES.index(row["status"])
+        if current_index < len(ISSUE_STATUSES) - 1:
+            new_status = ISSUE_STATUSES[current_index + 1]
+            conn.execute("UPDATE issues SET status = ? WHERE id = ?", (new_status, issue_id))
+            conn.commit()
+    conn.close()
+
+
+def delete_issue(issue_id):
+    conn = get_connection()
+    conn.execute("DELETE FROM issues WHERE id = ?", (issue_id,))
     conn.commit()
     conn.close()
