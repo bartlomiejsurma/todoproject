@@ -1,10 +1,9 @@
 """
-Moduł obsługi bazy danych SQLite.
+SQLite database handling module.
 
-Baza danych to plik `camper.db`, który powstaje automatycznie przy pierwszym
-uruchomieniu aplikacji. Trzyma się w nim wszystkie dane - na razie tylko
-zadania (tasks), ale w przyszłości dojdą kolejne tabele (usterki, wydatki,
-terminy).
+The database is stored in the `camper.db` file, which is created automatically
+on first application startup. It stores all app data, including tasks, issues,
+expenses, deadlines, and trips.
 """
 
 import sqlite3
@@ -17,18 +16,18 @@ DB_FILE = os.environ.get("DB_FILE", DEFAULT_DB_FILE)
 
 
 def get_connection():
-    """Otwiera połączenie z bazą danych."""
+    """Open a connection to the database."""
     conn = sqlite3.connect(DB_FILE)
     conn.execute("PRAGMA foreign_keys = ON")
-    # Dzięki temu wyniki zapytań zachowują się jak słowniki (dostęp po nazwie
-    # kolumny, np. row["text"]), a nie tylko po numerze indeksu.
+    # This makes query results behave like dictionaries (accessible by column name,
+    # e.g. row["text"]) rather than by numeric index.
     conn.row_factory = sqlite3.Row
     return conn
 
 
 def init_db():
-    """Tworzy tabele w bazie danych, jeśli jeszcze nie istnieją.
-    Bezpieczne do wywołania wielokrotnie - nic nie nadpisuje istniejących danych."""
+    """Create database tables if they do not exist.
+    Safe to call repeatedly; it does not overwrite existing data."""
     db_dir = os.path.dirname(DB_FILE)
     if db_dir and not os.path.isdir(db_dir):
         os.makedirs(db_dir, exist_ok=True)
@@ -137,7 +136,7 @@ def init_db():
 
 
 def ensure_task_category_column(conn):
-    """Dodaje kolumnę category do tabeli tasks, jeśli jej brak."""
+    """Add the category column to the tasks table if it is missing."""
     columns = [row[1] for row in conn.execute("PRAGMA table_info(tasks)").fetchall()]
     if "category" not in columns:
         conn.execute(
@@ -147,7 +146,7 @@ def ensure_task_category_column(conn):
 
 
 def ensure_task_description_column(conn):
-    """Dodaje kolumnę description do tabeli tasks, jeśli jej brak."""
+    """Add the description column to the tasks table if it is missing."""
     columns = [row[1] for row in conn.execute("PRAGMA table_info(tasks)").fetchall()]
     if "description" not in columns:
         conn.execute(
@@ -157,7 +156,7 @@ def ensure_task_description_column(conn):
 
 
 def ensure_task_image_column(conn):
-    """Dodaje kolumnę image do tabeli tasks, jeśli jej brak."""
+    """Add the image column to the tasks table if it is missing."""
     columns = [row[1] for row in conn.execute("PRAGMA table_info(tasks)").fetchall()]
     if "image" not in columns:
         conn.execute(
@@ -167,7 +166,7 @@ def ensure_task_image_column(conn):
 
 
 def ensure_issue_image_column(conn):
-    """Dodaje kolumnę image do tabeli issues, jeśli jej brak."""
+    """Add the image column to the issues table if it is missing."""
     columns = [row[1] for row in conn.execute("PRAGMA table_info(issues)").fetchall()]
     if "image" not in columns:
         conn.execute(
@@ -177,7 +176,7 @@ def ensure_issue_image_column(conn):
 
 
 def ensure_issue_category_column(conn):
-    """Dodaje kolumnę category, jeśli stara schemat bazy jej nie zawiera."""
+    """Add the category column if the existing database schema does not contain it."""
     columns = [row[1] for row in conn.execute("PRAGMA table_info(issues)").fetchall()]
     if "category" not in columns:
         conn.execute(
@@ -187,7 +186,7 @@ def ensure_issue_category_column(conn):
 
 
 def ensure_trip_kilometers_column(conn):
-    """Dodaje kolumnę kilometers do tabeli trips, jeśli jej brak."""
+    """Add the kilometers column to the trips table if it is missing."""
     columns = [row[1] for row in conn.execute("PRAGMA table_info(trips)").fetchall()]
     if "kilometers" not in columns:
         conn.execute("ALTER TABLE trips ADD COLUMN kilometers REAL NOT NULL DEFAULT 0")
@@ -195,14 +194,14 @@ def ensure_trip_kilometers_column(conn):
 
 
 def ensure_trip_image_column(conn):
-    """Dodaje kolumnę image do tabeli trips, jeśli jej brak."""
+    """Add the image column to the trips table if it is missing."""
     columns = [row[1] for row in conn.execute("PRAGMA table_info(trips)").fetchall()]
     if "image" not in columns:
         conn.execute("ALTER TABLE trips ADD COLUMN image TEXT NOT NULL DEFAULT ''")
         conn.commit()
 
 
-# --- Funkcje do obsługi zadań (tasks) ---
+# --- Task handling functions ---
 
 def get_all_tasks(category=None):
     conn = get_connection()
@@ -419,19 +418,19 @@ def get_trip_expenses(trip_id):
     return rows
 
 
-# --- Funkcje do obsługi usterek/pomysłów (issues) ---
+# --- Issues and ideas handling functions ---
 
-# Kolejność statusów - używana do przycisku "przenieś dalej"
+# Status order - used by the "move forward" button
 ISSUE_STATUSES = ["todo", "doing", "done"]
 
-# Kategorie usterek/pomysłów
+# Categories for issues and ideas
 ISSUE_CATEGORIES = ["electricity", "mechanical parts", "hydraulics", "interior", "others"]
 ISSUE_CATEGORY_LABELS = {
-    "electricity": "Elektryka",
-    "mechanical parts": "Elementy Mechaniczne",
-    "hydraulics": "Hydraulika",
-    "interior": "Wnętrze",
-    "others": "Inne",
+    "electricity": "Electrical",
+    "mechanical parts": "Mechanical Parts",
+    "hydraulics": "Hydraulics",
+    "interior": "Interior",
+    "others": "Other",
 }
 
 TASK_CATEGORIES = ISSUE_CATEGORIES
@@ -440,15 +439,15 @@ TASK_CATEGORY_LABELS = ISSUE_CATEGORY_LABELS
 # --- Finanse ---
 EXPENSE_CATEGORIES = ["maintenance", "parts_tools", "materials", "other"]
 EXPENSE_CATEGORY_LABELS = {
-    "maintenance": "Naprawy",
-    "parts_tools": "Narzędzia",
-    "materials": "Materiały",
-    "other": "Inne",
+    "maintenance": "Maintenance",
+    "parts_tools": "Tools",
+    "materials": "Materials",
+    "other": "Other",
     # legacy labels for old expense data
-    "fuel": "Paliwo",
-    "food": "Jedzenie",
-    "lodging": "Noclegi",
-    "equipment": "Wyposażenie",
+    "fuel": "Fuel",
+    "food": "Food",
+    "lodging": "Lodging",
+    "equipment": "Equipment",
 }
 
 
@@ -709,7 +708,7 @@ def get_budget_usage(expenses, budget):
 
 
 def advance_issue(issue_id):
-    """Przesuwa kartę do następnego statusu (todo -> doing -> done)."""
+    """Move the card to the next status (todo -> doing -> done)."""
     conn = get_connection()
     row = conn.execute("SELECT status FROM issues WHERE id = ?", (issue_id,)).fetchone()
     if row:
@@ -722,7 +721,7 @@ def advance_issue(issue_id):
 
 
 def revert_issue(issue_id):
-    """Przesuwa kartę do poprzedniego statusu (done -> doing -> todo)."""
+    """Move the card to the previous status (done -> doing -> todo)."""
     conn = get_connection()
     row = conn.execute("SELECT status FROM issues WHERE id = ?", (issue_id,)).fetchone()
     if row:
@@ -741,7 +740,7 @@ def delete_issue(issue_id):
     conn.close()
 
 
-# --- Funkcje do obsługi terminów (deadlines) ---
+# --- Deadline handling functions ---
 
 def get_all_deadlines():
     conn = get_connection()

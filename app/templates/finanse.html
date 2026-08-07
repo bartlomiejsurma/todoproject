@@ -1,60 +1,60 @@
 {% extends "base.html" %}
-{% block title %}Finanse{% endblock %}
+{% block title %}Finance{% endblock %}
 {% block content %}
     <h1 class="page-title">
         <span class="page-title-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"></path><path d="M7 15V9"></path><path d="M12 15V5"></path><path d="M17 15v-3"></path></svg></span>
-        <span>Finanse</span>
+        <span>Finance</span>
     </h1>
 
     <section class="section">
     <div class="panel-grid columns-2">
         <div class="card">
-            <h2>Budżet</h2>
+            <h2>Budget</h2>
             <div style="display:grid; gap:16px;">
                 <div style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:14px;">
                     <div style="background:#f8fafc; border-radius:14px; padding:16px;">
-                        <p class="small-text">Wydane</p>
-                        <p style="font-size:1.6rem; font-weight:700; margin:6px 0 0; color:#ef4444;">{{ expense_total | round(2) }} zł</p>
+                        <p class="small-text">Spent</p>
+                        <p style="font-size:1.6rem; font-weight:700; margin:6px 0 0; color:#ef4444;">{{ expense_total | round(2) }} PLN</p>
                     </div>
                     <div style="background:#f0fdf4; border-radius:14px; padding:16px;">
-                        <p class="small-text">Wpływy</p>
-                        <p style="font-size:1.6rem; font-weight:700; margin:6px 0 0; color:#10b981;">{{ income_total | round(2) }} zł</p>
+                        <p class="small-text">Income</p>
+                        <p style="font-size:1.6rem; font-weight:700; margin:6px 0 0; color:#10b981;">{{ income_total | round(2) }} PLN</p>
                     </div>
                 </div>
                 <div style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:14px; margin-top:4px;">
                     <div style="background:#eff6ff; border-radius:14px; padding:14px;">
-                        <p class="small-text">Pozostało</p>
-                        <p style="font-weight:700; margin:4px 0;">{{ remaining | round(2) }} zł</p>
+                        <p class="small-text">Remaining</p>
+                        <p style="font-weight:700; margin:4px 0;">{{ remaining | round(2) }} PLN</p>
                     </div>
                     <div style="background:#ecfdf5; border-radius:14px; padding:14px;">
-                        <p class="small-text">Wykorzystanie</p>
+                        <p class="small-text">Usage</p>
                         <p style="font-weight:700; margin:4px 0;">{{ usage | round(1) }}%</p>
                     </div>
                 </div>
             </div>
         </div>
         <div class="card">
-            <h2>Raporty</h2>
+            <h2>Reports</h2>
             <div style="display:grid; gap:12px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
-                    <span class="small-text">Suma wydatków</span>
-                    <strong>{{ report.total | round(2) }} zł</strong>
+                    <span class="small-text">Total expenses</span>
+                    <strong>{{ report.total | round(2) }} PLN</strong>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
-                    <span class="small-text">Ilość wpisów</span>
+                    <span class="small-text">Entry count</span>
                     <strong>{{ report.count }}</strong>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
-                    <span class="small-text">Średnia</span>
-                    <strong>{{ report.average | round(2) }} zł</strong>
+                    <span class="small-text">Average</span>
+                    <strong>{{ report.average | round(2) }} PLN</strong>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
-                    <span class="small-text">Największy</span>
-                    <strong>{{ report.max | round(2) }} zł</strong>
+                    <span class="small-text">Largest</span>
+                    <strong>{{ report.max | round(2) }} PLN</strong>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
-                    <span class="small-text">Najmniejszy</span>
-                    <strong>{{ report.min | round(2) }} zł</strong>
+                    <span class="small-text">Smallest</span>
+                    <strong>{{ report.min | round(2) }} PLN</strong>
                 </div>
             </div>
         </div>
@@ -64,11 +64,11 @@
     <section class="section">
     <div class="panel-grid columns-2-1">
         <div class="card">
-            <h2>Filtry</h2>
+            <h2>Filters</h2>
             <form action="/finanse" method="get" class="form-grid">
                 <div class="form-row">
                     <select name="category" class="select-field">
-                        <option value="" {% if not selected_category %}selected{% endif %}>Wszystkie</option>
+                        <option value="" {% if not selected_category %}selected{% endif %}>All</option>
                         {% for category in categories %}
                         <option value="{{ category }}" {% if selected_category == category %}selected{% endif %}>{{ category_labels[category] }}</option>
                         {% endfor %}
@@ -78,20 +78,20 @@
                 <div class="form-row">
                     <input type="date" name="end_date" value="{{ end_date }}" class="input-field">
                     <div style="display:grid; gap:12px;">
-                        <input type="text" name="min_amount" placeholder="Min zł" value="{{ min_amount }}" class="input-field">
-                        <input type="text" name="max_amount" placeholder="Max zł" value="{{ max_amount }}" class="input-field">
+                        <input type="text" name="min_amount" placeholder="Min PLN" value="{{ min_amount }}" class="input-field">
+                        <input type="text" name="max_amount" placeholder="Max PLN" value="{{ max_amount }}" class="input-field">
                     </div>
                 </div>
-                <button type="submit" class="btn">Zastosuj filtry</button>
+                <button type="submit" class="btn">Apply filters</button>
             </form>
         </div>
         <div class="card">
-            <h2>Kategorie</h2>
+            <h2>Categories</h2>
             <ul style="list-style:none; padding:0; margin:0; display:grid; gap:12px;">
                 {% for category, total in category_totals.items() %}
                 <li style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 14px; border-radius:14px; background:#f8fafc;">
                     <span>{{ category_labels.get(category, category) }}</span>
-                    <strong>{{ total | round(2) }} zł</strong>
+                    <strong>{{ total | round(2) }} PLN</strong>
                 </li>
                 {% endfor %}
             </ul>
@@ -101,7 +101,7 @@
 
     <section class="section">
     <div class="card chart-panel">
-        <h2>Wykres wpływów miesiąc po miesiącu</h2>
+        <h2>Income chart month by month</h2>
         <div style="display:grid; grid-template-columns: auto 1fr; gap:18px; align-items:end; padding-top:16px;">
             <div class="chart-axis">
                 <span>{{ max_income_total | round(0) }}</span>
@@ -124,7 +124,7 @@
 
     <section class="section">
     <div class="card chart-panel">
-        <h2>Wykres wpływy vs wydatki</h2>
+        <h2>Income vs expenses chart</h2>
         <div style="display:grid; grid-template-columns: auto 1fr; gap:18px; align-items:end; padding-top:16px;">
             <div class="chart-axis">
                 <span>100%</span>
@@ -148,11 +148,11 @@
         <div style="display:flex; flex-wrap:wrap; gap:12px; margin-top:18px;">
             <div style="display:flex; align-items:center; gap:8px; font-size:0.9rem; color:#475569;">
                 <span style="width:12px; height:12px; border-radius:999px; display:inline-block; background:#10b981;"></span>
-                <span>Wpływy</span>
+                <span>Income</span>
             </div>
             <div style="display:flex; align-items:center; gap:8px; font-size:0.9rem; color:#475569;">
                 <span style="width:12px; height:12px; border-radius:999px; display:inline-block; background:#ef4444;"></span>
-                <span>Wydatki</span>
+                <span>Expenses</span>
             </div>
         </div>
     </div>
@@ -160,7 +160,7 @@
 
     <section class="section">
     <div class="card chart-panel">
-        <h2>Wykres wydatków miesiąc po miesiącu</h2>
+        <h2>Expenses chart month by month</h2>
         <div style="display:grid; grid-template-columns: auto 1fr; gap:18px; align-items:end; padding-top:16px;">
             <div class="chart-axis">
                 <span>{{ max_month_total | round(0) }}</span>
@@ -197,28 +197,28 @@
     <section class="section">
     <div class="panel-grid columns-1-1">
         <div class="card">
-            <h2>Dodaj wpływ</h2>
+            <h2>Add income</h2>
             <form action="/finanse/income" method="post" class="form-grid">
-                <input class="input-field" type="text" name="title" placeholder="Nazwa wpływu">
-                <input class="input-field" type="text" name="amount" placeholder="Kwota zł">
+                <input class="input-field" type="text" name="title" placeholder="Income title">
+                <input class="input-field" type="text" name="amount" placeholder="Amount">
                 <input class="input-field" type="date" name="income_date" value="{{ today }}">
-                <textarea class="textarea-field" name="note" placeholder="Notatka" rows="4"></textarea>
-                <button class="btn" type="submit">Dodaj wpływ</button>
+                <textarea class="textarea-field" name="note" placeholder="Note" rows="4"></textarea>
+                <button class="btn" type="submit">Add income</button>
             </form>
         </div>
         <div class="card">
-            <h2>Dodaj wydatek</h2>
+            <h2>Add expense</h2>
             <form action="/finanse/add" method="post" class="form-grid">
-                <input class="input-field" type="text" name="title" placeholder="Nazwa wydatku">
-                <input class="input-field" type="text" name="amount" placeholder="Kwota zł">
+                <input class="input-field" type="text" name="title" placeholder="Expense title">
+                <input class="input-field" type="text" name="amount" placeholder="Amount">
                 <select class="select-field" name="category">
                     {% for category in categories %}
                     <option value="{{ category }}">{{ category_labels[category] }}</option>
                     {% endfor %}
                 </select>
                 <input class="input-field" type="date" name="expense_date" value="{{ today }}">
-                <textarea class="textarea-field" name="note" placeholder="Notatka" rows="4"></textarea>
-                <button class="btn" type="submit">Dodaj wydatek</button>
+                <textarea class="textarea-field" name="note" placeholder="Note" rows="4"></textarea>
+                <button class="btn" type="submit">Add expense</button>
             </form>
         </div>
     </div>
@@ -226,17 +226,17 @@
 
     <section class="section">
     <div class="card">
-        <h2>Wydatki</h2>
+        <h2>Expenses</h2>
         <div style="overflow-x:auto;">
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th>Data</th>
-                        <th>Tytuł</th>
-                        <th>Kategoria</th>
-                        <th>Kwota</th>
-                        <th>Notatka</th>
-                        <th>Akcje</th>
+                        <th>Date</th>
+                        <th>Title</th>
+                        <th>Category</th>
+                        <th>Amount</th>
+                        <th>Note</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -245,16 +245,16 @@
                         <td>{{ expense.expense_date }}</td>
                         <td>{{ expense.title }}</td>
                         <td>{{ category_labels.get(expense.category, expense.category) }}</td>
-                        <td>{{ expense.amount | round(2) }} zł</td>
+                        <td>{{ expense.amount | round(2) }} PLN</td>
                         <td>{{ expense.note }}</td>
                         <td>
                             <a href="/expenses/card/{{ expense.id }}" class="btn" style="background:#e0f2fe; color:#2563eb; box-shadow:none; padding:8px 12px; font-size:0.9rem;">Edytuj</a>
-                            <a href="/expenses/delete/{{ expense.id }}" class="btn" style="background:#fee2e2; color:#b91c1c; box-shadow:none; padding:8px 12px; font-size:0.9rem; margin-left:8px;">Usuń</a>
+                            <a href="/expenses/delete/{{ expense.id }}" class="btn" style="background:#fee2e2; color:#b91c1c; box-shadow:none; padding:8px 12px; font-size:0.9rem; margin-left:8px;">Delete</a>
                         </td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="6" style="padding:18px 16px; text-align:center; color:#64748b;">Brak wydatków do wyświetlenia.</td>
+                        <td colspan="6" style="padding:18px 16px; text-align:center; color:#64748b;">No expenses to display.</td>
                     </tr>
                     {% endfor %}
                 </tbody>

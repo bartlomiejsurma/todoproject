@@ -1,6 +1,6 @@
 """
-Prosta aplikacja To-Do w Flasku.
-Dane trzymane są w bazie SQLite (plik camper.db) - patrz db.py.
+A simple Flask To-Do application.
+Data is stored in a SQLite database (camper.db) - see db.py.
 """
 
 from flask import Flask, render_template, request, redirect, url_for, session, flash
@@ -19,22 +19,20 @@ ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 os.makedirs(app.config["ATTACHMENTS_FOLDER"], exist_ok=True)
 
-# SECRET_KEY jest potrzebny, żeby Flask mógł bezpiecznie podpisywać sesje
-# (czyli "pamiętać", że jesteś zalogowany). W produkcji ustawimy to jako
-# zmienną środowiskową na Railway - tutaj lokalnie ma wartość domyślną.
-app.secret_key = os.environ.get("SECRET_KEY", "dev-klucz-tylko-do-testow-lokalnych")
+# SECRET_KEY is required so Flask can securely sign sessions.
+# In production we will set it as a Railway environment variable.
+app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key-for-local-testing")
 
-# Hasło do panelu - lokalnie domyślnie "zmienhaslo123", ale docelowo
-# ustawimy je jako zmienną środowiskową APP_PASSWORD na Railway.
-APP_PASSWORD = os.environ.get("APP_PASSWORD", "zmienhaslo123")
+# Admin panel password - locally defaults to "changeme123", but in production
+# this should be set via the APP_PASSWORD environment variable.
+APP_PASSWORD = os.environ.get("APP_PASSWORD", "changeme123")
 
-# Tworzymy tabele w bazie danych (jeśli jeszcze nie istnieją) od razu
-# przy starcie aplikacji.
+# Create the database tables if they do not already exist at startup.
 db.init_db()
 
 
 def login_required(view_func):
-    """Dekorator: blokuje dostęp do strony, jeśli użytkownik nie jest zalogowany."""
+    """Decorator that blocks access to a page unless the user is logged in."""
     @wraps(view_func)
     def wrapped(*args, **kwargs):
         if not session.get("logged_in"):
@@ -51,7 +49,7 @@ def login():
         if entered_password == APP_PASSWORD:
             session["logged_in"] = True
             return redirect(url_for("index"))
-        error = "Złe hasło, spróbuj ponownie."
+        error = "Wrong password, please try again."
     return render_template("login.html", error=error)
 
 
@@ -68,7 +66,7 @@ def home():
 
 @app.route("/podroze", methods=["GET", "POST"])
 @login_required
-def podróze():
+def trips():
     if request.method == "POST":
         action = request.form.get("action")
         if action == "add_trip":
@@ -150,7 +148,7 @@ def podróze():
             place_id = request.form.get("place_id")
             if place_id:
                 db.toggle_trip_place(place_id)
-        return redirect(url_for("podróze"))
+        return redirect(url_for("trips"))
 
     trips = db.get_all_trips()
     trip_expense_totals = {}
@@ -587,19 +585,19 @@ def deadlines():
             days_until = None
 
         urgency = "green"
-        urgency_label = "Powyżej miesiąca"
+        urgency_label = "Over a month"
         if days_until is None:
             urgency = "gray"
             urgency_label = "Brak daty"
         elif days_until < 0:
             urgency = "red"
-            urgency_label = "Termin minął"
+            urgency_label = "Deadline passed"
         elif days_until <= 7:
             urgency = "red"
-            urgency_label = "Mniej niż tydzień"
+            urgency_label = "Less than a week"
         elif days_until <= 30:
             urgency = "yellow"
-            urgency_label = "Mniej niż miesiąc"
+            urgency_label = "Less than a month"
 
         row = dict(item)
         row["urgency"] = urgency
@@ -672,7 +670,7 @@ def upload_gallery():
         flash("Nie wybrano pliku.", "error")
         return redirect(url_for("gallery"))
     if not allowed_file(file.filename):
-        flash("Nieobsługiwany typ pliku. Użyj PNG, JPG, JPEG lub GIF.", "error")
+        flash("Unsupported file type. Use PNG, JPG, JPEG, or GIF.", "error")
         return redirect(url_for("gallery"))
     filename = secure_filename(file.filename)
     save_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
@@ -684,7 +682,7 @@ def upload_gallery():
             save_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
             index += 1
     file.save(save_path)
-    flash("Zdjęcie dodane do galerii.", "success")
+    flash("Photo added to the gallery.", "success")
     return redirect(url_for("gallery"))
 
 
@@ -695,12 +693,12 @@ def delete_gallery(filename):
     file_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
     if os.path.isfile(file_path) and allowed_file(filename):
         os.remove(file_path)
-        flash("Zdjęcie usunięte.", "success")
+        flash("Photo removed.", "success")
     else:
-        flash("Nie znaleziono zdjęcia do usunięcia.", "error")
+        flash("No photo found to remove.", "error")
     return redirect(url_for("gallery"))
 
 
 if __name__ == "__main__":
-    # debug=True przydaje się przy nauce - pokazuje błędy w przeglądarce
+    # debug=True is useful for learning and shows errors in the browser
     app.run(debug=True, port=5000)

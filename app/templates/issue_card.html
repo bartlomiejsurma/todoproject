@@ -1,17 +1,17 @@
 {% extends "base.html" %}
-{% block title %}Karta To-Do{% endblock %}
+{% block title %}To-Do card{% endblock %}
 {% block content %}
-    <h1>🔧 Karta To-Do</h1>
+    <h1>🔧 To-Do card</h1>
     <form action="/issues/card/{{ issue.id }}" method="post" enctype="multipart/form-data" style="display:grid; gap:16px; background:white; padding:20px; border-radius:12px; box-shadow:0 1px 10px rgba(0,0,0,0.08);">
-        <label style="font-weight:700;">Tytuł</label>
+        <label style="font-weight:700;">Title</label>
         <input type="text" name="title" value="{{ issue.title }}" style="width:100%; padding:12px; font-size:16px; border:1px solid #ccc; border-radius:8px;">
 
-        <label style="font-weight:700;">Opis</label>
+        <label style="font-weight:700;">Description</label>
         <textarea name="description" rows="5" style="width:100%; padding:12px; font-size:15px; border:1px solid #ccc; border-radius:8px;">{{ issue.description }}</textarea>
 
         <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:16px; align-items:start;">
             <div>
-                <label style="font-weight:700; display:block; margin-bottom:8px;">Kategoria</label>
+                <label style="font-weight:700; display:block; margin-bottom:8px;">Category</label>
                 <select name="category" style="width:100%; padding:12px; font-size:15px; border:1px solid #ccc; border-radius:8px;">
                     {% for category in categories %}
                     <option value="{{ category }}" {% if issue.category == category %}selected{% endif %}>{{ category_labels[category] }}</option>
@@ -27,18 +27,18 @@
                 </select>
             </div>
             <div>
-                <label style="font-weight:700; display:block; margin-bottom:8px;">Załącz obraz</label>
+                <label style="font-weight:700; display:block; margin-bottom:8px;">Upload image</label>
                 <input type="file" name="image" accept="image/*" style="width:100%;">
                 {% if issue.image %}
-                <img src="/static/attachments/{{ issue.image }}" alt="Załącznik" style="margin-top:12px; width:100%; max-width:280px; border-radius:10px; border:1px solid #e2e8f0; object-fit:cover;">
+                <img src="/static/attachments/{{ issue.image }}" alt="Attachment" style="margin-top:12px; width:100%; max-width:280px; border-radius:10px; border:1px solid #e2e8f0; object-fit:cover;">
                 <div style="margin-top:8px;">
-                    <a href="/issues/card/{{ issue.id }}/delete_attachment" style="color:#dc2626; text-decoration:none; font-size:14px;">Usuń załącznik</a>
+                    <a href="/issues/card/{{ issue.id }}/delete_attachment" style="color:#dc2626; text-decoration:none; font-size:14px;">Delete attachment</a>
                 </div>
                 {% endif %}
             </div>
         </div>
 
-        <button type="submit" style="width:fit-content; padding:12px 20px; background:#2563eb; color:white; border:none; border-radius:8px; cursor:pointer;">Zapisz zmiany</button>
-        <a href="/issues" style="text-decoration:none; color:#2563eb;">← Powrót do To-Do</a>
+        <button type="submit" style="width:fit-content; padding:12px 20px; background:#2563eb; color:white; border:none; border-radius:8px; cursor:pointer;">Save changes</button>
+        <a href="/issues" style="text-decoration:none; color:#2563eb;">← Back to To-Do</a>
     </form>
 {% endblock %}
