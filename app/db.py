@@ -11,7 +11,9 @@ import sqlite3
 import os
 from datetime import date
 
-DB_FILE = os.environ.get("DB_FILE", "camper.db")
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+DEFAULT_DB_FILE = os.path.join(BASE_DIR, "camper.db")
+DB_FILE = os.environ.get("DB_FILE", DEFAULT_DB_FILE)
 
 
 def get_connection():
@@ -27,6 +29,9 @@ def get_connection():
 def init_db():
     """Tworzy tabele w bazie danych, jeśli jeszcze nie istnieją.
     Bezpieczne do wywołania wielokrotnie - nic nie nadpisuje istniejących danych."""
+    db_dir = os.path.dirname(DB_FILE)
+    if db_dir and not os.path.isdir(db_dir):
+        os.makedirs(db_dir, exist_ok=True)
     conn = get_connection()
     conn.execute("""
         CREATE TABLE IF NOT EXISTS tasks (

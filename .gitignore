@@ -1,0 +1,27 @@
+# Python bytecode
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+
+# SQLite databases
+*.db
+*.sqlite3
+
+# Uploaded files and generated media
+app/static/attachments/
+app/static/gallery/
+
+# Virtual environments
+.env
+.venv/
+venv/
+ENV/
+env/
+
+# IDE/editor state
+.idea/
+.vscode/
+
+# Test cache
+.pytest_cache/

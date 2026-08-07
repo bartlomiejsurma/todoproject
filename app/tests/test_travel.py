@@ -1,6 +1,6 @@
 import sqlite3
 
-import db
+from app import db
 
 
 def test_init_db_adds_missing_trip_columns(tmp_path):

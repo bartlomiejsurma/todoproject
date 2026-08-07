@@ -1,4 +1,4 @@
-import db
+from app import db
 
 
 def test_get_monthly_category_summary_groups_expenses_by_month_and_category():
