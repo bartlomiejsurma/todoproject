@@ -61,7 +61,18 @@ def logout():
 
 @app.route("/")
 def home():
-    return render_template("home.html", active_page="home")
+    tasks = db.get_all_tasks()
+    deadlines = db.get_all_deadlines()
+    trips = db.get_all_trips()
+    return render_template(
+        "home.html",
+        active_page="home",
+        overview_counts={
+            "ideas": len(tasks),
+            "deadlines": len(deadlines),
+            "trips": len(trips),
+        },
+    )
 
 
 @app.route("/podroze", methods=["GET", "POST"])
@@ -439,7 +450,12 @@ def finanse():
         min_amount=min_amount_val,
         max_amount=max_amount_val,
     )
-    incomes = db.get_all_incomes()
+    incomes = db.get_all_incomes(
+        start_date=start_date,
+        end_date=end_date,
+        min_amount=min_amount_val,
+        max_amount=max_amount_val,
+    )
     expense_total = db.get_expense_total(expenses)
     income_total = db.get_income_total(incomes)
     budget = income_total
@@ -470,6 +486,7 @@ def finanse():
         "finanse.html",
         active_page="finanse",
         expenses=expenses,
+        incomes=incomes,
         categories=db.EXPENSE_CATEGORIES,
         category_labels=db.EXPENSE_CATEGORY_LABELS,
         selected_category=selected_category,
@@ -568,6 +585,38 @@ def expense_card(expense_id):
 @login_required
 def delete_expense(expense_id):
     db.delete_expense(expense_id)
+    return redirect(url_for("finanse"))
+
+
+@app.route("/incomes/card/<int:income_id>", methods=["GET", "POST"])
+@login_required
+def income_card(income_id):
+    income = db.get_income(income_id)
+    if not income:
+        return redirect(url_for("finanse"))
+    if request.method == "POST":
+        title = request.form.get("title", "").strip()
+        amount = request.form.get("amount", "0").replace(",", ".")
+        income_date = request.form.get("income_date")
+        note = request.form.get("note", "").strip()
+        try:
+            amount_value = float(amount)
+        except ValueError:
+            amount_value = 0.0
+        if title and amount_value > 0 and income_date:
+            db.update_income(income_id, title, amount_value, income_date, note)
+        return redirect(url_for("income_card", income_id=income_id))
+    return render_template(
+        "income_card.html",
+        active_page="finanse",
+        income=income,
+    )
+
+
+@app.route("/incomes/delete/<int:income_id>")
+@login_required
+def delete_income(income_id):
+    db.delete_income(income_id)
     return redirect(url_for("finanse"))
 
 

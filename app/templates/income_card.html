@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Income{% endblock %}
+{% block content %}
+    <h1>✏️ Income card</h1>
+    <form action="/incomes/card/{{ income.id }}" method="post" style="display:grid; gap:16px; background:white; padding:20px; border-radius:12px; box-shadow:0 1px 10px rgba(0,0,0,0.08);">
+        <label style="font-weight:700;">Title</label>
+        <input type="text" name="title" value="{{ income.title }}" style="width:100%; padding:12px; border:1px solid #ccc; border-radius:8px;">
+
+        <label style="font-weight:700;">Amount</label>
+        <input type="text" name="amount" value="{{ income.amount }}" style="width:100%; padding:12px; border:1px solid #ccc; border-radius:8px;">
+
+        <label style="font-weight:700;">Date</label>
+        <input type="date" name="income_date" value="{{ income.income_date }}" style="width:100%; padding:12px; border:1px solid #ccc; border-radius:8px;">
+
+        <label style="font-weight:700;">Note</label>
+        <textarea name="note" rows="4" style="width:100%; padding:12px; border:1px solid #ccc; border-radius:8px;">{{ income.note }}</textarea>
+
+        <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+            <button type="submit" style="padding:12px 20px; background:#10b981; color:white; border:none; border-radius:8px; cursor:pointer;">Save</button>
+            <a href="/finanse" style="color:#2563eb; text-decoration:none;">← Back to finance</a>
+        </div>
+    </form>
+{% endblock %}

@@ -585,13 +585,55 @@ def add_income(title, amount, income_date=None, note=""):
     conn.close()
 
 
-def get_all_incomes():
+def get_all_incomes(start_date=None, end_date=None, min_amount=None, max_amount=None):
     conn = get_connection()
-    rows = conn.execute(
-        "SELECT * FROM incomes ORDER BY income_date DESC, id DESC"
-    ).fetchall()
+    query = "SELECT * FROM incomes"
+    clauses = []
+    params = []
+    if start_date:
+        clauses.append("income_date >= ?")
+        params.append(start_date)
+    if end_date:
+        clauses.append("income_date <= ?")
+        params.append(end_date)
+    if min_amount is not None:
+        clauses.append("amount >= ?")
+        params.append(min_amount)
+    if max_amount is not None:
+        clauses.append("amount <= ?")
+        params.append(max_amount)
+    if clauses:
+        query += " WHERE " + " AND ".join(clauses)
+    query += " ORDER BY income_date DESC, id DESC"
+    rows = conn.execute(query, params).fetchall()
     conn.close()
     return rows
+
+
+def get_income(income_id):
+    conn = get_connection()
+    row = conn.execute("SELECT * FROM incomes WHERE id = ?", (income_id,)).fetchone()
+    conn.close()
+    return row
+
+
+def update_income(income_id, title, amount, income_date=None, note=""):
+    if not income_date:
+        income_date = date.today().isoformat()
+    conn = get_connection()
+    conn.execute(
+        "UPDATE incomes SET title = ?, amount = ?, income_date = ?, note = ? WHERE id = ?",
+        (title, amount, income_date, note, income_id),
+    )
+    conn.commit()
+    conn.close()
+
+
+def delete_income(income_id):
+    conn = get_connection()
+    conn.execute("DELETE FROM incomes WHERE id = ?", (income_id,))
+    conn.commit()
+    conn.close()
 
 
 def get_income_total(incomes):
