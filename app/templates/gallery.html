@@ -18,12 +18,12 @@
     {% endif %}
     {% endwith %}
 
-    <form action="/gallery/upload" method="post" enctype="multipart/form-data" style="display:grid; grid-template-columns: minmax(150px, 1fr) auto auto; gap:12px; align-items:center; margin-bottom:24px; background:white; padding:16px; border-radius:8px;">
-        <input type="file" name="photo" accept="image/*" style="padding:10px; border:1px solid #ccc; border-radius:6px;">
-        <button type="submit">Upload photo</button>
-        <div style="display:flex; align-items:center; gap:10px;">
+    <form action="/gallery/upload" method="post" enctype="multipart/form-data" style="display:grid; gap:12px; margin-bottom:24px; background:white; padding:16px; border-radius:8px;">
+        <input type="file" name="photo" accept="image/*" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;">
+        <button type="submit" style="width:100%;">Upload photo</button>
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:10px;">
             <label for="sort" style="font-size:14px; color:#334155;">Sortuj:</label>
-            <select id="sort" name="sort" onchange="location = this.value" style="padding:10px; border:1px solid #ccc; border-radius:6px;">
+            <select id="sort" name="sort" onchange="location = this.value" style="padding:10px; border:1px solid #ccc; border-radius:6px; min-width:180px;">
                 <option value="/gallery?sort=newest" {% if sort_mode == 'newest' %}selected{% endif %}>Newest</option>
                 <option value="/gallery?sort=oldest" {% if sort_mode == 'oldest' %}selected{% endif %}>Oldest</option>
             </select>

@@ -6,23 +6,23 @@
         <span>To-Do</span>
     </h1>
 
-    <form action="/issues/add" method="post" enctype="multipart/form-data" style="display:grid; grid-template-columns: 1.6fr 1.4fr 1fr 1fr 1fr; gap:8px; margin-bottom:24px; background:white; padding:16px; border-radius:8px;">
+    <form action="/issues/add" method="post" enctype="multipart/form-data" style="display:grid; gap:10px; margin-bottom:24px; background:white; padding:16px; border-radius:8px;">
         <input type="text" name="title" placeholder="Title (e.g. Replace the fridge fuse)" autofocus
-               style="min-width:200px; padding:10px; font-size:15px; border:1px solid #ccc; border-radius:6px;">
+               style="width:100%; padding:10px; font-size:15px; border:1px solid #ccc; border-radius:6px;">
         <input type="text" name="description" placeholder="Description (optional)"
-               style="min-width:200px; padding:10px; font-size:15px; border:1px solid #ccc; border-radius:6px;">
-        <select name="category" style="padding:10px; font-size:15px; border:1px solid #ccc; border-radius:6px;">
+               style="width:100%; padding:10px; font-size:15px; border:1px solid #ccc; border-radius:6px;">
+        <select name="category" style="width:100%; padding:10px; font-size:15px; border:1px solid #ccc; border-radius:6px;">
             {% for category in categories %}
             <option value="{{ category }}">{{ category_labels[category] }}</option>
             {% endfor %}
         </select>
-        <input type="file" name="image" accept="image/*" style="padding:10px; font-size:15px; border:1px solid #ccc; border-radius:6px;">
-        <button type="submit" style="min-width:120px;">Add card</button>
+        <input type="file" name="image" accept="image/*" style="width:100%; padding:10px; font-size:15px; border:1px solid #ccc; border-radius:6px;">
+        <button type="submit" style="width:100%;">Add card</button>
     </form>
 
-    <form action="/issues" method="get" style="margin-bottom:24px; display:flex; gap:12px; align-items:center;">
+    <form action="/issues" method="get" style="margin-bottom:24px; display:flex; flex-wrap:wrap; gap:12px; align-items:center;">
         <label for="category-filter" style="font-weight:600;">Filter by category:</label>
-        <select id="category-filter" name="category" style="padding:10px; font-size:15px; border:1px solid #ccc; border-radius:6px;">
+        <select id="category-filter" name="category" style="padding:10px; font-size:15px; border:1px solid #ccc; border-radius:6px; min-width:180px;">
             <option value="" {% if not selected_category %}selected{% endif %}>All</option>
             {% for category in categories %}
             <option value="{{ category }}" {% if selected_category == category %}selected{% endif %}>{{ category_labels[category] }}</option>
@@ -31,7 +31,7 @@
         <button type="submit" class="btn">Filter</button>
     </form>
 
-    <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:16px;">
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:16px;">
         {% set column_titles = {'todo': '📝 To do', 'doing': '🔨 In progress', 'done': '✅ Done'} %}
         {% for status in ['todo', 'doing', 'done'] %}
         <div style="background:#e9edf3; border-radius:8px; padding:12px;">

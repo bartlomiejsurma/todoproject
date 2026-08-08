@@ -6,23 +6,23 @@
         <span>My ideas</span>
     </h1>
 
-    <form action="/add" method="post" enctype="multipart/form-data" style="display:grid; grid-template-columns: 1.2fr 1fr 0.8fr auto; gap:8px; margin-bottom:16px;">
+    <form action="/add" method="post" enctype="multipart/form-data" style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:10px; margin-bottom:16px;">
         <input type="text" name="task" placeholder="New idea..." autofocus
-               style="padding:10px; font-size:16px; border:1px solid #ccc; border-radius:6px;">
+               style="padding:10px; font-size:16px; border:1px solid #ccc; border-radius:6px; width:100%;">
         <input type="text" name="description" placeholder="Description (optional)"
-               style="padding:10px; font-size:16px; border:1px solid #ccc; border-radius:6px;">
-        <select name="category" style="padding:10px; font-size:16px; border:1px solid #ccc; border-radius:6px;">
+               style="padding:10px; font-size:16px; border:1px solid #ccc; border-radius:6px; width:100%;">
+        <select name="category" style="padding:10px; font-size:16px; border:1px solid #ccc; border-radius:6px; width:100%;">
             {% for category in categories %}
             <option value="{{ category }}">{{ category_labels[category] }}</option>
             {% endfor %}
         </select>
-        <input type="file" name="image" accept="image/*" style="padding:10px; font-size:16px; border:1px solid #ccc; border-radius:6px;">
-        <button type="submit" style="grid-column: span 4;">Add</button>
+        <input type="file" name="image" accept="image/*" style="padding:10px; font-size:16px; border:1px solid #ccc; border-radius:6px; width:100%;">
+        <button type="submit" style="grid-column: span 2;">Add</button>
     </form>
 
-    <form action="/todo" method="get" style="display:flex; align-items:center; gap:10px; margin-bottom:20px;">
+    <form action="/todo" method="get" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:20px;">
         <label for="category-filter" style="font-weight:600;">Filter by category:</label>
-        <select id="category-filter" name="category" style="padding:10px; font-size:15px; border:1px solid #ccc; border-radius:6px;">
+        <select id="category-filter" name="category" style="padding:10px; font-size:15px; border:1px solid #ccc; border-radius:6px; min-width:180px;">
             <option value="" {% if not selected_category %}selected{% endif %}>All</option>
             {% for category in categories %}
             <option value="{{ category }}" {% if selected_category == category %}selected{% endif %}>{{ category_labels[category] }}</option>

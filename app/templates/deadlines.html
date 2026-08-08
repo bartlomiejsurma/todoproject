@@ -6,13 +6,13 @@
         <span>Deadlines</span>
     </h1>
 
-    <form action="/deadlines/add" method="post" style="display:grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap:8px; margin-bottom:24px; background:white; padding:16px; border-radius:8px;">
+    <form action="/deadlines/add" method="post" style="display:grid; gap:10px; margin-bottom:24px; background:white; padding:16px; border-radius:8px;">
         <input type="text" name="title" placeholder="Nazwa terminu" autofocus
-               style="min-width:200px; padding:10px; font-size:15px; border:1px solid #ccc; border-radius:6px;">
-        <input type="date" name="due_date" style="padding:10px; font-size:15px; border:1px solid #ccc; border-radius:6px;">
+               style="width:100%; padding:10px; font-size:15px; border:1px solid #ccc; border-radius:6px;">
+        <input type="date" name="due_date" style="width:100%; padding:10px; font-size:15px; border:1px solid #ccc; border-radius:6px;">
         <input type="text" name="note" placeholder="Note (optional)"
-               style="min-width:200px; padding:10px; font-size:15px; border:1px solid #ccc; border-radius:6px;">
-        <button type="submit" style="min-width:140px;">Add deadline</button>
+               style="width:100%; padding:10px; font-size:15px; border:1px solid #ccc; border-radius:6px;">
+        <button type="submit" style="width:100%;">Add deadline</button>
     </form>
 
     {% if deadlines %}
@@ -27,7 +27,7 @@
                 <div style="font-size:13px; color:#64748b; margin-top:6px;">{{ deadline.note }}</div>
                 {% endif %}
             </div>
-            <div style="text-align:right; display:flex; flex-direction:column; gap:8px;">
+            <div style="text-align:right; display:flex; flex-direction:column; gap:8px; min-width:0;">
                 <span style="font-size:13px; color:{{ '#16a34a' if deadline.urgency == 'green' else '#eab308' if deadline.urgency == 'yellow' else '#dc2626' if deadline.urgency == 'red' else '#64748b' }}; font-weight:700;">{{ deadline.urgency_label }}</span>
                 <div style="display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;">
                     <a href="/deadlines/edit/{{ deadline.id }}" style="font-size:14px; color:#2d6cdf; text-decoration:none;">✏️ Edytuj</a>
