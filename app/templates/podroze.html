@@ -82,11 +82,18 @@
                 <input class="input-field" type="text" name="kilometers" value="{{ selected_trip.kilometers|default(0)|round(1) }}" placeholder="Kilometry">
                 <input class="input-field" type="text" name="note" value="{{ selected_trip.note }}" placeholder="Trip description">
             </div>
-            <button class="btn" type="submit">Zapisz zmiany</button>
+            <button class="btn" type="submit">Save changes</button>
         </form>
-        {% if selected_trip.image %}
-        <div style="margin-top:16px;">
-            <img src="/static/attachments/{{ selected_trip.image }}" alt="Trip photo" style="max-width:100%; max-height:280px; border-radius:16px; object-fit:cover;">
+        {% if selected_trip_images %}
+        <div style="margin-top:16px; display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px;">
+            {% for trip_image in selected_trip_images %}
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:16px; padding:8px;">
+                <img src="/static/attachments/{{ trip_image.filename }}" alt="{{ trip_image.label or selected_trip.title }}" style="width:100%; height:180px; border-radius:12px; object-fit:cover; display:block;">
+                {% if trip_image.label %}
+                <div class="small-text" style="margin-top:8px;">{{ trip_image.label }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
         </div>
         {% endif %}
         <form action="/podroze" method="post" enctype="multipart/form-data" class="form-grid" style="margin-top:16px;">
@@ -103,10 +110,13 @@
         <div class="card">
             <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px;">
                 <h2 style="margin-bottom:0;">Trip plan</h2>
-                <span class="label-pill">{{ selected_trip.kilometers|default(0)|round(1) }} km</span>
+                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                    <span class="label-pill">{{ selected_trip.kilometers|default(0)|round(1) }} km</span>
+                    <a class="btn" href="/podroze" style="text-decoration:none; display:inline-flex; align-items:center; justify-content:center;">Deselect trip</a>
+                </div>
             </div>
 
-            <div style="display:grid; gap:12px; margin-bottom:16px;">
+            <div class="trip-plan-section" style="display:grid; gap:12px; margin-bottom:16px;">
                 <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:16px; padding:14px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
                         <strong>Trip plan</strong>
@@ -128,7 +138,7 @@
                 <input type="hidden" name="action" value="add_place">
                 <input type="hidden" name="trip_id" value="{{ selected_trip.id }}">
                 <div class="form-row">
-                    <input class="input-field" type="text" name="place_name" placeholder="Nazwa miejsca">
+                    <input class="input-field" type="text" name="place_name" placeholder="Place name">
                     <label style="display:flex; align-items:center; gap:8px; color:#475569; padding:14px 0;">
                         <input type="checkbox" name="visited"> Visited
                     </label>
@@ -155,15 +165,19 @@
             </div>
         </div>
         <div class="card">
-            <h2>Trip expenses</h2>
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px;">
+                <h2 style="margin-bottom:0;">Trip expenses</h2>
+                <a class="btn" href="/podroze" style="text-decoration:none; display:inline-flex; align-items:center; justify-content:center;">Deselect trip</a>
+            </div>
+            <div class="trip-expenses-section">
             <form action="/podroze" method="post" class="form-grid">
                 <input type="hidden" name="action" value="add_expense">
                 <input type="hidden" name="trip_id" value="{{ selected_trip.id }}">
-                <input class="input-field" type="text" name="expense_title" placeholder="Nazwa wydatku">
+                <input class="input-field" type="text" name="expense_title" placeholder="Expense title">
                 <input class="input-field" type="text" name="expense_amount" placeholder="Amount">
                 <div class="form-row">
                     <input class="input-field" type="date" name="expense_date" value="{{ today }}">
-                    <input class="input-field" type="text" name="expense_category" placeholder="Kategoria">
+                    <input class="input-field" type="text" name="expense_category" placeholder="Category">
                 </div>
                 <textarea class="textarea-field" name="expense_note" placeholder="Note" rows="3"></textarea>
                 <button class="btn" type="submit">Add expense</button>
@@ -185,12 +199,12 @@
                         <input type="hidden" name="action" value="edit_expense">
                         <input type="hidden" name="expense_id" value="{{ expense.id }}">
                         <div class="form-row">
-                            <input class="input-field" type="text" name="expense_title" value="{{ expense.title }}" placeholder="Nazwa wydatku">
+                            <input class="input-field" type="text" name="expense_title" value="{{ expense.title }}" placeholder="Expense title">
                             <input class="input-field" type="text" name="expense_amount" value="{{ expense.amount }}" placeholder="Amount">
                         </div>
                         <div class="form-row">
                             <input class="input-field" type="date" name="expense_date" value="{{ expense.expense_date }}">
-                            <input class="input-field" type="text" name="expense_category" value="{{ expense.category }}" placeholder="Kategoria">
+                            <input class="input-field" type="text" name="expense_category" value="{{ expense.category }}" placeholder="Category">
                         </div>
                         <textarea class="textarea-field" name="expense_note" placeholder="Note" rows="2">{{ expense.note }}</textarea>
                         <div style="display:flex; gap:8px; flex-wrap:wrap;">
@@ -203,22 +217,11 @@
                 <p class="small-text">No expenses to display.</p>
                 {% endfor %}
             </div>
+            </div>
         </div>
     </div>
     </section>
 
-    <section class="section">
-    <div class="card">
-        <h2>More ideas to add</h2>
-        <ul style="margin:0; padding-left:20px; color:#475569; line-height:1.6;">
-            <li>trip photos</li>
-            <li>attraction notes</li>
-            <li>a packing list</li>
-            <li>a trip map in the future</li>
-        </ul>
-        <p class="small-text" style="margin-top:12px;">A future update could add a map that tracks all trips in one place.</p>
-    </div>
-    </section>
     {% endif %}
     <script>
     document.addEventListener('DOMContentLoaded', function () {
@@ -262,7 +265,7 @@
                             return item.querySelector('button[type="submit"]').dataset.visited === 'true';
                         }).length;
                         const totalCount = allForms.length;
-                        progressPill.textContent = visitedCount + ' / ' + totalCount + ' odwiedzonych';
+                        progressPill.textContent = visitedCount + ' / ' + totalCount + ' visited';
                         progressPill.dataset.visited = String(visitedCount);
                         progressPill.dataset.total = String(totalCount);
 

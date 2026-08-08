@@ -124,6 +124,16 @@ def init_db():
             FOREIGN KEY(trip_id) REFERENCES trips(id) ON DELETE CASCADE
         )
     """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS trip_images (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            trip_id INTEGER NOT NULL,
+            filename TEXT NOT NULL,
+            label TEXT DEFAULT '',
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(trip_id) REFERENCES trips(id) ON DELETE CASCADE
+        )
+    """)
     conn.commit()
     ensure_task_category_column(conn)
     ensure_task_description_column(conn)
@@ -373,6 +383,28 @@ def add_trip_expense(trip_id, title, amount, expense_date, category="", note="")
     expense_id = cursor.lastrowid
     conn.close()
     return expense_id
+
+
+def add_trip_image(trip_id, filename, label=""):
+    conn = get_connection()
+    cursor = conn.execute(
+        "INSERT INTO trip_images (trip_id, filename, label) VALUES (?, ?, ?)",
+        (trip_id, filename, label),
+    )
+    conn.commit()
+    image_id = cursor.lastrowid
+    conn.close()
+    return image_id
+
+
+def get_trip_images(trip_id):
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT * FROM trip_images WHERE trip_id = ? ORDER BY id ASC",
+        (trip_id,),
+    ).fetchall()
+    conn.close()
+    return rows
 
 
 def update_trip_expense(expense_id, title=None, amount=None, expense_date=None, category=None, note=None):

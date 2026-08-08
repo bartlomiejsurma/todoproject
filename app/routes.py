@@ -129,6 +129,13 @@ def trips():
                 image_name = save_attachment(image_file)
                 if image_name:
                     db.update_trip(trip_id, image=image_name)
+                    trip = db.get_trip(trip_id)
+                    if trip:
+                        gallery_label = trip["title"] if "title" in trip.keys() else "Trip photo"
+                        image_file.stream.seek(0)
+                        gallery_name = save_gallery_photo(image_file, gallery_label)
+                        if gallery_name:
+                            db.add_trip_image(trip_id, image_name, gallery_label)
         elif action == "add_place":
             trip_id = request.form.get("trip_id")
             name = request.form.get("place_name", "").strip()
@@ -182,16 +189,21 @@ def trips():
     selected_trip = None
     selected_places = []
     selected_expenses = []
+    selected_trip_images = []
     if selected_trip_id:
         selected_trip = db.get_trip(selected_trip_id)
         if selected_trip:
             selected_places = db.get_trip_places(selected_trip_id)
             selected_expenses = db.get_trip_expenses(selected_trip_id)
-    if not selected_trip and trips:
-        selected_trip = trips[0]
-        selected_trip_id = str(selected_trip["id"])
-        selected_places = db.get_trip_places(selected_trip["id"])
-        selected_expenses = db.get_trip_expenses(selected_trip["id"])
+            selected_trip_images = db.get_trip_images(selected_trip_id)
+            if not selected_trip_images and selected_trip["image"]:
+                selected_trip_images = [{"filename": selected_trip["image"], "label": selected_trip["title"]}]
+    if selected_trip_id and not selected_trip:
+        selected_trip = None
+        selected_trip_id = None
+        selected_places = []
+        selected_expenses = []
+        selected_trip_images = []
 
     return render_template(
         "podroze.html",
@@ -202,6 +214,7 @@ def trips():
         selected_trip_id=selected_trip_id,
         selected_places=selected_places,
         selected_expenses=selected_expenses,
+        selected_trip_images=selected_trip_images,
         today=date.today().isoformat(),
     )
 
@@ -211,6 +224,7 @@ def save_attachment(file):
         return ""
     if not allowed_file(file.filename):
         return ""
+    file.stream.seek(0)
     filename = secure_filename(file.filename)
     save_path = os.path.join(app.config["ATTACHMENTS_FOLDER"], filename)
     if os.path.exists(save_path):
@@ -219,6 +233,26 @@ def save_attachment(file):
         while os.path.exists(save_path):
             filename = f"{name}_{index}{ext}"
             save_path = os.path.join(app.config["ATTACHMENTS_FOLDER"], filename)
+            index += 1
+    file.save(save_path)
+    return filename
+
+
+def save_gallery_photo(file, label):
+    if not file or file.filename == "":
+        return ""
+    if not allowed_file(file.filename):
+        return ""
+    file.stream.seek(0)
+    base_name, ext = os.path.splitext(secure_filename(file.filename))
+    safe_label = secure_filename(label or "trip-photo")
+    filename = f"{safe_label}__{base_name}{ext}"
+    save_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+    if os.path.exists(save_path):
+        index = 1
+        while os.path.exists(save_path):
+            filename = f"{safe_label}__{base_name}_{index}{ext}"
+            save_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
             index += 1
     file.save(save_path)
     return filename
@@ -714,11 +748,14 @@ def gallery():
     for f in os.listdir(app.config["UPLOAD_FOLDER"]):
         path = os.path.join(app.config["UPLOAD_FOLDER"], f)
         if os.path.isfile(path) and allowed_file(f):
-            files.append((f, os.path.getmtime(path)))
+            label = f
+            if "__" in f:
+                label = f.split("__", 1)[0].replace("-", " ").replace("_", " ")
+            files.append((f, os.path.getmtime(path), label))
 
     reverse = sort_mode != "oldest"
     files.sort(key=lambda item: item[1], reverse=reverse)
-    files = [filename for filename, _ in files]
+    files = [{"filename": filename, "label": label} for filename, _, label in files]
     return render_template("gallery.html", files=files, active_page="gallery", sort_mode=sort_mode)
 
 

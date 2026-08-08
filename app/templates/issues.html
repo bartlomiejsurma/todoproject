@@ -42,7 +42,7 @@
                 {% if issue.description %}
                 <p style="margin:6px 0; font-size:14px; color:#555;">{{ issue.description }}</p>
                 {% endif %}
-                <p style="margin:6px 0 0; font-size:13px; color:#475569;">Kategoria: {{ category_labels[issue.category] }}</p>
+                <p style="margin:6px 0 0; font-size:13px; color:#475569;">Category: {{ category_labels[issue.category] }}</p>
                 {% if issue.image %}
                 <img src="/static/attachments/{{ issue.image }}" alt="Attachment" style="width:100%; max-width:260px; margin-top:10px; border-radius:8px; object-fit:cover; border:1px solid #e2e8f0;">
                 {% endif %}
