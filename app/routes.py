@@ -11,13 +11,24 @@ import os
 from . import db
 
 app = Flask(__name__)
-app.config["UPLOAD_FOLDER"] = os.path.join(app.root_path, "static", "gallery")
-app.config["ATTACHMENTS_FOLDER"] = os.path.join(app.root_path, "static", "attachments")
+DATA_DIR = os.environ.get("DATA_DIR", os.path.join(app.root_path, "static"))
+app.config["UPLOAD_FOLDER"] = os.path.join(DATA_DIR, "gallery")
+app.config["ATTACHMENTS_FOLDER"] = os.path.join(DATA_DIR, "attachments")
 app.config["MAX_CONTENT_LENGTH"] = 8 * 1024 * 1024  # 8 MB
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
 
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 os.makedirs(app.config["ATTACHMENTS_FOLDER"], exist_ok=True)
+
+from flask import send_from_directory
+
+@app.route("/static/gallery/<path:filename>")
+def serve_gallery_file(filename):
+    return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
+
+@app.route("/static/attachments/<path:filename>")
+def serve_attachment_file(filename):
+    return send_from_directory(app.config["ATTACHMENTS_FOLDER"], filename)
 
 # SECRET_KEY is required so Flask can securely sign sessions.
 # In production we will set it as a Railway environment variable.
@@ -751,3 +762,16 @@ def delete_gallery(filename):
 if __name__ == "__main__":
     # debug=True is useful for learning and shows errors in the browser
     app.run(debug=True, port=5000)
+
+import shutil
+import tempfile
+from flask import send_file
+
+@app.route("/backup")
+@login_required
+def backup():
+    data_root = "/data" if os.path.isdir("/data") else app.root_path
+    tmp_dir = tempfile.mkdtemp()
+    zip_base = os.path.join(tmp_dir, "backup")
+    zip_path = shutil.make_archive(zip_base, "zip", data_root)
+    return send_file(zip_path, as_attachment=True, download_name="camper_backup.zip")
