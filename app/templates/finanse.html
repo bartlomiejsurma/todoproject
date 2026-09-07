@@ -1,74 +1,613 @@
 {% extends "base.html" %}
 {% block title %}Finance{% endblock %}
 {% block content %}
-    <h1 class="page-title">
-        <span class="page-title-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"></path><path d="M7 15V9"></path><path d="M12 15V5"></path><path d="M17 15v-3"></path></svg></span>
-        <span>Finance</span>
-    </h1>
+    <style>
+        .finance-shell {
+            width: min(100%, 1280px);
+            max-width: 1280px;
+            margin: 0 auto;
+            display: grid;
+            gap: 20px;
+            padding: 8px 0 32px;
+        }
 
-    <section class="section">
-    <div class="panel-grid columns-2">
-        <div class="card">
-            <h2>Budget</h2>
-            <div style="display:grid; gap:16px;">
-                <div style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:14px;">
-                    <div style="background:#f8fafc; border-radius:14px; padding:16px;">
-                        <p class="small-text">Spent</p>
-                        <p style="font-size:1.6rem; font-weight:700; margin:6px 0 0; color:#ef4444;">{{ expense_total | round(2) }} PLN</p>
-                    </div>
-                    <div style="background:#f0fdf4; border-radius:14px; padding:16px;">
-                        <p class="small-text">Income</p>
-                        <p style="font-size:1.6rem; font-weight:700; margin:6px 0 0; color:#10b981;">{{ income_total | round(2) }} PLN</p>
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .kpi-card {
+            background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.96));
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 20px;
+            padding: 18px;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+            display: grid;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .kpi-card.income { border-top: 4px solid #10b981; }
+        .kpi-card.expense { border-top: 4px solid #f97316; }
+        .kpi-card.balance { border-top: 4px solid #3b82f6; }
+        .kpi-card.usage { border-top: 4px solid #8b5cf6; }
+
+        .kpi-card .label {
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #64748b;
+        }
+
+        .kpi-card .value {
+            font-size: clamp(1.5rem, 2vw, 2.25rem);
+            line-height: 1.1;
+            font-weight: 800;
+            color: #0f172a;
+            word-break: break-word;
+        }
+
+        .kpi-card.income .value { color: #0f766e; }
+        .kpi-card.expense .value { color: #c2410c; }
+        .kpi-card.balance .value { color: #1d4ed8; }
+        .kpi-card.usage .value { color: #6d28d9; }
+
+        .kpi-card .meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            color: #475569;
+            font-size: 0.8rem;
+            flex-wrap: wrap;
+        }
+
+        .dashboard-card {
+            background: rgba(255,255,255,0.96);
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            border-radius: 22px;
+            box-shadow: 0 12px 24px rgba(15, 23, 42, 0.05);
+            padding: 18px;
+        }
+
+        .filter-header,
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .eyebrow {
+            font-size: 0.72rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-weight: 800;
+            color: #64748b;
+            margin: 0 0 6px;
+        }
+
+        .panel-header h2,
+        .filter-header h2,
+        .section-heading {
+            margin: 0;
+            font-size: clamp(1.15rem, 1.8vw, 1.45rem);
+            color: #0f172a;
+        }
+
+        .finance-filter-form {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+            align-items: end;
+        }
+
+        .filter-field {
+            display: grid;
+            gap: 8px;
+        }
+
+        .filter-field label {
+            color: #475569;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .input-field,
+        .select-field,
+        .textarea-field {
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid #dfe7f1;
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-size: 0.95rem;
+            color: #0f172a;
+        }
+
+        .input-field:focus,
+        .select-field:focus,
+        .textarea-field:focus {
+            outline: 2px solid rgba(59, 130, 246, 0.18);
+            border-color: #93c5fd;
+        }
+
+        .amount-stack {
+            display: grid;
+            gap: 8px;
+        }
+
+        .filter-actions {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding-top: 4px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-weight: 700;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.18s ease;
+        }
+
+        .btn:hover { transform: translateY(-1px); }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            color: white;
+            box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+        }
+
+        .btn-neutral {
+            background: #f8fafc;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+            box-shadow: none;
+        }
+
+        .btn-success {
+            background: #dcfce7;
+            color: #166534;
+            box-shadow: none;
+        }
+
+        .btn-info {
+            background: #dbeafe;
+            color: #1d4ed8;
+            box-shadow: none;
+        }
+
+        .analytics-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 2.2fr) minmax(250px, 0.8fr);
+            gap: 20px;
+        }
+
+        .chart-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .toggle-group {
+            display: inline-flex;
+            gap: 4px;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            padding: 4px;
+            border-radius: 12px;
+        }
+
+        .toggle-btn {
+            border: none;
+            background: transparent;
+            color: #475569;
+            font-weight: 700;
+            border-radius: 10px;
+            padding: 8px 12px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .toggle-btn.active {
+            background: white;
+            color: #0f172a;
+            box-shadow: 0 6px 16px rgba(148, 163, 184, 0.15);
+        }
+
+        .range-select {
+            border: 1px solid #dfe7f1;
+            background: #f8fafc;
+            color: #0f172a;
+            padding: 8px 10px;
+            border-radius: 10px;
+            font-weight: 700;
+        }
+
+        .series-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 14px;
+            margin-bottom: 18px;
+        }
+
+        .series-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border-radius: 999px;
+            border: 1px solid #e2e8f0;
+            background: #f8fafc;
+            color: #334155;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .series-chip input {
+            width: 14px;
+            height: 14px;
+            accent-color: #10b981;
+        }
+
+        .series-chip.expense input { accent-color: #f97316; }
+
+        .chart-wrap {
+            position: relative;
+            width: 100%;
+            min-height: 332px;
+        }
+
+        .chart-wrap canvas {
+            width: 100% !important;
+            height: 332px !important;
+        }
+
+        .donut-wrap {
+            position: relative;
+            width: 100%;
+            height: 220px;
+            margin-bottom: 10px;
+        }
+
+        .breakdown-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: grid;
+            gap: 10px;
+        }
+
+        .breakdown-list li {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 8px 0;
+            border-bottom: 1px solid #edf2f7;
+            color: #334155;
+            font-size: 0.9rem;
+        }
+
+        .breakdown-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .breakdown-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+
+        .transaction-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .transaction-item {
+            display: grid;
+            grid-template-columns: minmax(0, 1.3fr) auto;
+            gap: 12px;
+            align-items: center;
+            border: 1px solid #eef2f7;
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 12px 14px;
+        }
+
+        .transaction-main {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 0;
+        }
+
+        .transaction-main strong {
+            color: #0f172a;
+            font-size: 0.96rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .transaction-meta {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            color: #64748b;
+            font-size: 0.76rem;
+        }
+
+        .transaction-tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-weight: 800;
+            font-size: 0.72rem;
+        }
+
+        .transaction-tag.income {
+            background: rgba(16, 185, 129, 0.12);
+            color: #057a55;
+        }
+
+        .transaction-tag.expense {
+            background: rgba(249, 115, 22, 0.16);
+            color: #c2410c;
+        }
+
+        .transaction-amount {
+            font-size: 0.98rem;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .transaction-amount.income { color: #057a55; }
+        .transaction-amount.expense { color: #c2410c; }
+
+        .text-link {
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.85rem;
+        }
+
+        .finance-table-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .data-table-wrap {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .data-table {
+            width: 100%;
+            min-width: 520px;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 12px 10px;
+            text-align: left;
+            vertical-align: top;
+            border-bottom: 1px solid #edf2f7;
+            word-break: break-word;
+        }
+
+        .data-table thead th {
+            background: #f8fafc;
+            color: #64748b;
+            font-size: 0.76rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .table-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .mini-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .mini-btn.edit {
+            background: #e0f2fe;
+            color: #2563eb;
+        }
+
+        .mini-btn.delete {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .form-grid-compact {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .form-card {
+            display: grid;
+            gap: 12px;
+        }
+
+        .textarea-field {
+            min-height: 110px;
+            resize: vertical;
+        }
+
+        @media (max-width: 980px) {
+            .kpi-grid,
+            .finance-filter-form,
+            .analytics-layout,
+            .finance-table-grid,
+            .form-grid-compact {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .finance-shell {
+                gap: 16px;
+                padding-bottom: 24px;
+            }
+
+            .kpi-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .dashboard-card,
+            .kpi-card {
+                border-radius: 18px;
+                padding: 16px;
+            }
+
+            .chart-wrap canvas {
+                height: 280px !important;
+            }
+
+            .transaction-item {
+                grid-template-columns: 1fr;
+            }
+
+            .transaction-amount {
+                justify-self: flex-start;
+            }
+
+            .data-table {
+                min-width: 0;
+            }
+
+            .data-table,
+            .data-table thead,
+            .data-table tbody,
+            .data-table tr,
+            .data-table th,
+            .data-table td {
+                display: block;
+                width: 100%;
+            }
+
+            .data-table thead {
+                display: none;
+            }
+
+            .data-table tbody {
+                display: grid;
+                gap: 10px;
+            }
+
+            .data-table tbody tr {
+                background: #f8fafc;
+                border: 1px solid #edf2f7;
+                border-radius: 16px;
+                padding: 12px;
+            }
+
+            .data-table tbody td {
+                border: none;
+                padding: 8px 0;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                font-size: 0.91rem;
+            }
+
+            .data-table tbody td::before {
+                content: attr(data-label);
+                font-size: 0.72rem;
+                color: #64748b;
+                letter-spacing: 0.04em;
+                text-transform: uppercase;
+                font-weight: 800;
+                flex-shrink: 0;
+            }
+        }
+    </style>
+
+    <div class="finance-shell">
+        <section class="section">
+            <div class="kpi-grid">
+                <div class="kpi-card income">
+                    <span class="label">Income</span>
+                    <span class="value">{{ income_total | round(2) }} PLN</span>
+                    <div class="meta">
+                        <span>Total inflow</span>
+                        <span>{{ incomes | length }} items</span>
                     </div>
                 </div>
-                <div style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:14px; margin-top:4px;">
-                    <div style="background:#eff6ff; border-radius:14px; padding:14px;">
-                        <p class="small-text">Remaining</p>
-                        <p style="font-weight:700; margin:4px 0;">{{ remaining | round(2) }} PLN</p>
+                <div class="kpi-card expense">
+                    <span class="label">Expenses</span>
+                    <span class="value">{{ expense_total | round(2) }} PLN</span>
+                    <div class="meta">
+                        <span>Total outflow</span>
+                        <span>{{ expenses | length }} items</span>
                     </div>
-                    <div style="background:#ecfdf5; border-radius:14px; padding:14px;">
-                        <p class="small-text">Usage</p>
-                        <p style="font-weight:700; margin:4px 0;">{{ usage | round(1) }}%</p>
+                </div>
+                <div class="kpi-card balance">
+                    <span class="label">Balance</span>
+                    <span class="value">{{ remaining | round(2) }} PLN</span>
+                    <div class="meta">
+                        <span>Current balance</span>
+                        <span>{{ report.count }} trans.</span>
+                    </div>
+                </div>
+                <div class="kpi-card usage">
+                    <span class="label">Usage</span>
+                    <span class="value">{{ usage | round(1) }}%</span>
+                    <div class="meta">
+                        <span>Income used</span>
+                        <span>{{ budget | round(2) }} PLN</span>
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="card">
-            <h2>Reports</h2>
-            <div style="display:grid; gap:12px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
-                    <span class="small-text">Total expenses</span>
-                    <strong>{{ report.total | round(2) }} PLN</strong>
-                </div>
-                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
-                    <span class="small-text">Entry count</span>
-                    <strong>{{ report.count }}</strong>
-                </div>
-                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
-                    <span class="small-text">Average</span>
-                    <strong>{{ report.average | round(2) }} PLN</strong>
-                </div>
-                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
-                    <span class="small-text">Largest</span>
-                    <strong>{{ report.max | round(2) }} PLN</strong>
-                </div>
-                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
-                    <span class="small-text">Smallest</span>
-                    <strong>{{ report.min | round(2) }} PLN</strong>
-                </div>
-            </div>
-        </div>
-    </div>
-    </section>
+        </section>
 
-    <section class="section">
-    <div class="panel-grid columns-2-1">
-        <div class="card">
-            <h2>Filters</h2>
-            <form action="/finanse" method="get" class="form-grid">
-                <div class="form-row">
-                    <div class="filter-field-group">
-                        <label class="filter-field-label" for="category">Category</label>
+        <section class="section">
+            <div class="dashboard-card">
+                <div class="filter-header">
+                    <h2>Filters</h2>
+                </div>
+                <form action="/finanse" method="get" class="finance-filter-form">
+                    <div class="filter-field">
+                        <label for="category">Category</label>
                         <select id="category" name="category" class="select-field">
                             <option value="" {% if not selected_category %}selected{% endif %}>All</option>
                             {% for category in categories %}
@@ -76,258 +615,528 @@
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="filter-field-group">
-                        <label class="filter-field-label" for="start_date">From</label>
+                    <div class="filter-field">
+                        <label for="start_date">From</label>
                         <input id="start_date" type="date" name="start_date" value="{{ start_date }}" class="input-field">
                     </div>
-                </div>
-                <div class="form-row">
-                    <div class="filter-field-group">
-                        <label class="filter-field-label" for="end_date">To</label>
+                    <div class="filter-field">
+                        <label for="end_date">To</label>
                         <input id="end_date" type="date" name="end_date" value="{{ end_date }}" class="input-field">
                     </div>
-                    <div class="filter-field-group">
-                        <label class="filter-field-label" for="min_amount">Amount range</label>
-                        <div style="display:grid; gap:12px;">
+                    <div class="filter-field">
+                        <label for="min_amount">Amount range</label>
+                        <div class="amount-stack">
                             <input id="min_amount" type="text" name="min_amount" placeholder="Min PLN" value="{{ min_amount }}" class="input-field">
                             <input id="max_amount" type="text" name="max_amount" placeholder="Max PLN" value="{{ max_amount }}" class="input-field">
                         </div>
                     </div>
-                </div>
-                <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
-                    <button type="submit" class="btn">Apply filters</button>
-                    <a href="/finanse" class="btn" style="background:#f8fafc; color:#475569; border:1px solid #e2e8f0; box-shadow:none;">Clear all filters</a>
-                </div>
-                <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:10px;">
-                    <a href="{{ url_for('export_finance', format='csv', **request.args.to_dict()) }}" class="btn" style="background:#dcfce7; color:#166534; box-shadow:none;">Export CSV</a>
-                    <a href="{{ url_for('export_finance', format='xlsx', **request.args.to_dict()) }}" class="btn" style="background:#dbeafe; color:#1d4ed8; box-shadow:none;">Export XLSX</a>
-                </div>
-            </form>
-        </div>
-        <div class="card">
-            <h2>Categories</h2>
-            <ul style="list-style:none; padding:0; margin:0; display:grid; gap:12px;">
-                {% for category, total in category_totals.items() %}
-                <li style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 14px; border-radius:14px; background:#f8fafc;">
-                    <span>{{ category_labels.get(category, category) }}</span>
-                    <strong>{{ total | round(2) }} PLN</strong>
-                </li>
-                {% endfor %}
-            </ul>
-        </div>
-    </div>
-    </section>
-
-    <section class="section">
-    <div class="card chart-panel">
-        <h2>Income chart month by month</h2>
-        <div style="display:grid; grid-template-columns: auto 1fr; gap:18px; align-items:end; padding-top:16px;">
-            <div class="chart-axis">
-                <span>{{ max_income_total | round(0) }}</span>
-                <span>{{ (max_income_total * 0.75) | round(0) }}</span>
-                <span>{{ (max_income_total * 0.5) | round(0) }}</span>
-                <span>{{ (max_income_total * 0.25) | round(0) }}</span>
-                <span>0</span>
-            </div>
-            <div class="chart-bars">
-                {% for month, total in monthly_income_summary.items() %}
-                <div class="chart-bar">
-                    <div class="chart-bar-stack chart-income-stack" style="height:{{ (total / (max_income_total or 1) * 100) | round(0) }}%;"></div>
-                    <span class="chart-label">{{ month }}</span>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
-    </section>
-
-    <section class="section">
-    <div class="card chart-panel">
-        <h2>Income vs expenses chart</h2>
-        <div style="display:grid; grid-template-columns: auto 1fr; gap:18px; align-items:end; padding-top:16px;">
-            <div class="chart-axis">
-                <span>100%</span>
-                <span>75%</span>
-                <span>50%</span>
-                <span>25%</span>
-                <span>0%</span>
-            </div>
-            <div class="chart-bars">
-                {% for month, values in monthly_income_vs_expense_summary.items() %}
-                <div class="chart-bar">
-                    <div class="chart-bar-stack comparison-stack" style="height:100%;">
-                        <div class="chart-segment comparison-income" style="height:{{ (values.income / (values.income + values.expense + 0.0001) * 100) | round(2) }}%;"></div>
-                        <div class="chart-segment comparison-expense" style="height:{{ (values.expense / (values.income + values.expense + 0.0001) * 100) | round(2) }}%;"></div>
+                    <div class="filter-actions">
+                        <button type="submit" class="btn btn-primary">Apply filters</button>
+                        <a href="/finanse" class="btn btn-neutral">Clear all filters</a>
+                        <a href="{{ url_for('export_finance', format='csv', **request.args.to_dict()) }}" class="btn btn-success">Export CSV</a>
+                        <a href="{{ url_for('export_finance', format='xlsx', **request.args.to_dict()) }}" class="btn btn-info">Export XLSX</a>
                     </div>
-                    <span class="chart-label">{{ month }}</span>
-                </div>
-                {% endfor %}
+                </form>
             </div>
-        </div>
-        <div style="display:flex; flex-wrap:wrap; gap:12px; margin-top:18px;">
-            <div style="display:flex; align-items:center; gap:8px; font-size:0.9rem; color:#475569;">
-                <span style="width:12px; height:12px; border-radius:999px; display:inline-block; background:#10b981;"></span>
-                <span>Income</span>
-            </div>
-            <div style="display:flex; align-items:center; gap:8px; font-size:0.9rem; color:#475569;">
-                <span style="width:12px; height:12px; border-radius:999px; display:inline-block; background:#ef4444;"></span>
-                <span>Expenses</span>
-            </div>
-        </div>
-    </div>
-    </section>
+        </section>
 
-    <section class="section">
-    <div class="card chart-panel">
-        <h2>Expenses chart month by month</h2>
-        <div style="display:grid; grid-template-columns: auto 1fr; gap:18px; align-items:end; padding-top:16px;">
-            <div class="chart-axis">
-                <span>{{ max_month_total | round(0) }}</span>
-                <span>{{ (max_month_total * 0.75) | round(0) }}</span>
-                <span>{{ (max_month_total * 0.5) | round(0) }}</span>
-                <span>{{ (max_month_total * 0.25) | round(0) }}</span>
-                <span>0</span>
-            </div>
-            <div class="chart-bars">
-                {% for month, total in month_totals.items() %}
-                {% set segments = monthly_category_summary.get(month, []) %}
-                <div class="chart-bar">
-                    <div class="chart-bar-stack" style="height:{{ (total / (max_month_total or 1) * 100) | round(0) }}%;">
-                        {% for category, category_total in segments %}
-                        <div class="chart-segment" style="height:{{ (category_total / total * 100) | round(2) }}%; background:{{ category_colors.get(category, '#64748b') }};"></div>
-                        {% endfor %}
+        <section class="section analytics-layout">
+            <div class="dashboard-card">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">Overview</p>
+                        <h2>Financial analytics</h2>
                     </div>
-                    <span class="chart-label">{{ month }}</span>
+                    <div class="chart-toolbar">
+                        <div class="toggle-group" aria-label="Chart type">
+                            <button type="button" class="toggle-btn active" data-chart-type="bar-values">Bar</button>
+                            <button type="button" class="toggle-btn" data-chart-type="bar-percent">Bar — 100%</button>
+                            <button type="button" class="toggle-btn" data-chart-type="line">Line</button>
+                        </div>
+                        <label style="display:flex; align-items:center; gap:8px; color:#475569; font-size:0.8rem; font-weight:700;">
+                            Range
+                            <select id="financeRange" class="range-select">
+                                <option value="6">6 months</option>
+                                <option value="12" selected>12 months</option>
+                                <option value="24">24 months</option>
+                            </select>
+                        </label>
+                    </div>
                 </div>
-                {% endfor %}
+                <div id="seriesControls" class="series-controls"></div>
+                <div class="chart-wrap">
+                    <canvas id="financeChart"></canvas>
+                </div>
             </div>
-        </div>
-        <div style="display:flex; flex-wrap:wrap; gap:12px; margin-top:18px;">
-            {% for category in categories %}
-            <div style="display:flex; align-items:center; gap:8px; font-size:0.9rem; color:#475569;">
-                <span style="width:12px; height:12px; border-radius:999px; display:inline-block; background:{{ category_colors.get(category, '#64748b') }};"></span>
-                <span>{{ category_labels.get(category, category) }}</span>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    </section>
 
-    <section class="section">
-    <div class="panel-grid columns-1-1">
-        <div class="card">
-            <h2>Add income</h2>
-            <form action="/finanse/income" method="post" class="form-grid" onsubmit="sessionStorage.setItem('finance-scroll-position', window.scrollY);">
-                <input class="input-field" type="text" name="title" placeholder="Income title">
-                <input class="input-field" type="text" name="amount" placeholder="Amount">
-                <input class="input-field" type="date" name="income_date" value="{{ today }}">
-                <textarea class="textarea-field" name="note" placeholder="Note" rows="4"></textarea>
-                <button class="btn" type="submit">Add income</button>
-            </form>
-        </div>
-        <div class="card">
-            <h2>Add expense</h2>
-            <form action="/finanse/add" method="post" class="form-grid" onsubmit="sessionStorage.setItem('finance-scroll-position', window.scrollY);">
-                <input class="input-field" type="text" name="title" placeholder="Expense title">
-                <input class="input-field" type="text" name="amount" placeholder="Amount">
-                <select class="select-field" name="category">
-                    {% for category in categories %}
-                    <option value="{{ category }}">{{ category_labels[category] }}</option>
-                    {% endfor %}
-                </select>
-                <input class="input-field" type="date" name="expense_date" value="{{ today }}">
-                <textarea class="textarea-field" name="note" placeholder="Note" rows="4"></textarea>
-                <button class="btn" type="submit">Add expense</button>
-            </form>
-        </div>
-    </div>
-    </section>
+            <div class="dashboard-card">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">Breakdown</p>
+                        <h2>Expense categories</h2>
+                    </div>
+                </div>
+                <div class="donut-wrap">
+                    <canvas id="expenseBreakdownChart"></canvas>
+                </div>
+                <ul id="categoryBreakdownList" class="breakdown-list"></ul>
+            </div>
+        </section>
 
-    <section class="section">
-    <div class="panel-grid columns-2">
-        <div class="card">
-            <h2>Income</h2>
-            <div style="overflow-x:auto;">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Title</th>
-                            <th>Amount</th>
-                            <th>Note</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for income in incomes %}
-                        <tr>
-                            <td>{{ income.income_date }}</td>
-                            <td>{{ income.title }}</td>
-                            <td>{{ income.amount | round(2) }} PLN</td>
-                            <td>{{ income.note }}</td>
-                            <td>
-                                <div class="table-actions">
-                                    <a href="/incomes/card/{{ income.id }}" class="btn" style="background:#e0f2fe; color:#2563eb; padding:8px 12px; font-size:0.9rem;">Edit</a>
-                                    <a href="/incomes/delete/{{ income.id }}" class="btn" style="background:#fee2e2; color:#b91c1c; padding:8px 12px; font-size:0.9rem;">Delete</a>
-                                </div>
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="5" style="padding:18px 16px; text-align:center; color:#64748b;">No income to display.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+        <section class="section">
+            <div class="dashboard-card">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">Transactions</p>
+                        <h2>Recent transactions</h2>
+                    </div>
+                    <a href="#all-transactions" class="text-link">View all transactions</a>
+                </div>
+                <div id="recentTransactions" class="transaction-list"></div>
             </div>
-        </div>
-        <div class="card">
-            <h2>Expenses</h2>
-            <div style="overflow-x:auto;">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Title</th>
-                            <th>Category</th>
-                            <th>Amount</th>
-                            <th>Note</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for expense in expenses %}
-                        <tr>
-                            <td>{{ expense.expense_date }}</td>
-                            <td>{{ expense.title }}</td>
-                            <td>{{ category_labels.get(expense.category, expense.category) }}</td>
-                            <td>{{ expense.amount | round(2) }} PLN</td>
-                            <td>{{ expense.note }}</td>
-                            <td>
-                                <div class="table-actions">
-                                    <a href="/expenses/card/{{ expense.id }}" class="btn" style="background:#e0f2fe; color:#2563eb; padding:8px 12px; font-size:0.9rem;">Edit</a>
-                                    <a href="/expenses/delete/{{ expense.id }}" class="btn" style="background:#fee2e2; color:#b91c1c; padding:8px 12px; font-size:0.9rem;">Delete</a>
-                                </div>
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="6" style="padding:18px 16px; text-align:center; color:#64748b;">No expenses to display.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+        </section>
+
+        <section class="section" id="all-transactions">
+            <div class="dashboard-card">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">Records</p>
+                        <h2>All transactions</h2>
+                    </div>
+                </div>
+                <div class="finance-table-grid">
+                    <div>
+                        <h3 class="section-heading" style="margin-bottom: 12px;">Income</h3>
+                        <div class="data-table-wrap">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Title</th>
+                                        <th>Amount</th>
+                                        <th>Note</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for income in incomes %}
+                                    <tr>
+                                        <td data-label="Date">{{ income.income_date }}</td>
+                                        <td data-label="Title">{{ income.title }}</td>
+                                        <td data-label="Amount">{{ income.amount | round(2) }} PLN</td>
+                                        <td data-label="Note">{{ income.note }}</td>
+                                        <td data-label="Actions">
+                                            <div class="table-actions">
+                                                <a href="/incomes/card/{{ income.id }}" class="mini-btn edit">Edit</a>
+                                                <a href="/incomes/delete/{{ income.id }}" class="mini-btn delete">Delete</a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td data-label="Info" colspan="5" style="padding:18px 16px; text-align:center; color:#64748b;">No income to display.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="section-heading" style="margin-bottom: 12px;">Expenses</h3>
+                        <div class="data-table-wrap">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Title</th>
+                                        <th>Category</th>
+                                        <th>Amount</th>
+                                        <th>Note</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for expense in expenses %}
+                                    <tr>
+                                        <td data-label="Date">{{ expense.expense_date }}</td>
+                                        <td data-label="Title">{{ expense.title }}</td>
+                                        <td data-label="Category">{{ category_labels.get(expense.category, expense.category) }}</td>
+                                        <td data-label="Amount">{{ expense.amount | round(2) }} PLN</td>
+                                        <td data-label="Note">{{ expense.note }}</td>
+                                        <td data-label="Actions">
+                                            <div class="table-actions">
+                                                <a href="/expenses/card/{{ expense.id }}" class="mini-btn edit">Edit</a>
+                                                <a href="/expenses/delete/{{ expense.id }}" class="mini-btn delete">Delete</a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td data-label="Info" colspan="6" style="padding:18px 16px; text-align:center; color:#64748b;">No expenses to display.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
+        </section>
+
+        <section class="section">
+            <div class="form-grid-compact">
+                <div class="dashboard-card">
+                    <div>
+                        <p class="eyebrow">Add</p>
+                        <h2 class="section-heading">Add income</h2>
+                    </div>
+                    <form action="/finanse/income" method="post" class="form-card" onsubmit="sessionStorage.setItem('finance-scroll-position', window.scrollY);">
+                        <input class="input-field" type="text" name="title" placeholder="Income title">
+                        <input class="input-field" type="text" name="amount" placeholder="Amount">
+                        <input class="input-field" type="date" name="income_date" value="{{ today }}">
+                        <textarea class="textarea-field" name="note" placeholder="Note" rows="4"></textarea>
+                        <button class="btn btn-primary" type="submit">Add income</button>
+                    </form>
+                </div>
+                <div class="dashboard-card">
+                    <div>
+                        <p class="eyebrow">Add</p>
+                        <h2 class="section-heading">Add expense</h2>
+                    </div>
+                    <form action="/finanse/add" method="post" class="form-card" onsubmit="sessionStorage.setItem('finance-scroll-position', window.scrollY);">
+                        <input class="input-field" type="text" name="title" placeholder="Expense title">
+                        <input class="input-field" type="text" name="amount" placeholder="Amount">
+                        <select class="select-field" name="category">
+                            {% for category in categories %}
+                            <option value="{{ category }}">{{ category_labels[category] }}</option>
+                            {% endfor %}
+                        </select>
+                        <input class="input-field" type="date" name="expense_date" value="{{ today }}">
+                        <textarea class="textarea-field" name="note" placeholder="Note" rows="4"></textarea>
+                        <button class="btn btn-primary" type="submit">Add expense</button>
+                    </form>
+                </div>
+            </div>
+        </section>
     </div>
-    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
     <script>
+        const categoryTotals = {{ category_totals|tojson|safe }};
+        const categoryLabels = {{ category_labels|tojson|safe }};
+        const monthlyComparisonSummary = {{ monthly_income_vs_expense_summary|tojson|safe }};
+        const incomeRows = {{ income_rows|tojson|safe }};
+        const expenseRows = {{ expense_rows|tojson|safe }};
+
+        const chartState = {
+            type: 'bar-values',
+            range: 12,
+            incomeVisible: true,
+            expenseVisible: true,
+        };
+
+        function formatMoney(value) {
+            const numericValue = Number(value || 0);
+            return new Intl.NumberFormat('pl-PL', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2,
+            }).format(numericValue) + ' PLN';
+        }
+
+        function formatMonthLabel(key) {
+            const [year, month] = key.split('-').map(Number);
+            return new Date(year, month - 1, 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+        }
+
+        function getVisibleMonths() {
+            const keys = Object.keys(monthlyComparisonSummary || {}).sort();
+            return keys.slice(-chartState.range);
+        }
+
+        function buildSeriesControls() {
+            const container = document.getElementById('seriesControls');
+            if (!container) return;
+
+            const html = `
+                <label class="series-chip income"><input type="checkbox" data-series="income" checked>Income</label>
+                <label class="series-chip expense"><input type="checkbox" data-series="expense" checked>Expenses</label>
+            `;
+            container.innerHTML = html;
+
+            container.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
+                checkbox.addEventListener('change', (event) => {
+                    const series = event.target.dataset.series;
+                    if (series === 'income') chartState.incomeVisible = event.target.checked;
+                    if (series === 'expense') chartState.expenseVisible = event.target.checked;
+                    renderFinanceChart();
+                });
+            });
+        }
+
+        function buildExpenseBreakdown() {
+            const list = document.getElementById('categoryBreakdownList');
+            const entries = Object.entries(categoryTotals || {})
+                .filter(([, value]) => Number(value) > 0)
+                .sort((a, b) => Number(b[1]) - Number(a[1]));
+            const colors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#14b8a6', '#64748b'];
+
+            if (list) {
+                list.innerHTML = entries.map(([key, total], index) => `
+                    <li>
+                        <div class="breakdown-item">
+                            <span class="breakdown-dot" style="background:${colors[index % colors.length]};"></span>
+                            <span>${categoryLabels[key] || key}</span>
+                        </div>
+                        <strong>${formatMoney(total)}</strong>
+                    </li>
+                `).join('');
+            }
+
+            const canvas = document.getElementById('expenseBreakdownChart');
+            if (!canvas) return;
+
+            if (window.expenseBreakdownChart) {
+                window.expenseBreakdownChart.destroy();
+            }
+
+            window.expenseBreakdownChart = new Chart(canvas, {
+                type: 'doughnut',
+                data: {
+                    labels: entries.map(([key]) => categoryLabels[key] || key),
+                    datasets: [{
+                        data: entries.map(([, total]) => Number(total)),
+                        backgroundColor: colors,
+                        borderWidth: 0,
+                        hoverOffset: 6,
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '58%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => `${context.label}: ${formatMoney(context.parsed)}`,
+                            },
+                        },
+                    },
+                },
+            });
+        }
+
+        function buildRecentTransactions() {
+            const container = document.getElementById('recentTransactions');
+            if (!container) return;
+
+            const rows = [
+                ...incomeRows.map((row) => ({
+                    type: 'Income',
+                    date: row.income_date,
+                    title: row.title,
+                    amount: Number(row.amount || 0),
+                    note: row.note || '',
+                })),
+                ...expenseRows.map((row) => ({
+                    type: 'Expense',
+                    date: row.expense_date,
+                    title: row.title,
+                    amount: Number(row.amount || 0),
+                    note: row.note || '',
+                })),
+            ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 8);
+
+            if (!rows.length) {
+                container.innerHTML = '<div class="transaction-item"><div class="transaction-main"><strong>No recent transactions yet</strong></div></div>';
+                return;
+            }
+
+            container.innerHTML = rows.map((row) => `
+                <div class="transaction-item">
+                    <div class="transaction-main">
+                        <strong>${row.title}</strong>
+                        <div class="transaction-meta">
+                            <span>${row.date}</span>
+                            <span class="transaction-tag ${row.type === 'Income' ? 'income' : 'expense'}">${row.type}</span>
+                            ${row.note ? `<span>${row.note}</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="transaction-amount ${row.type === 'Income' ? 'income' : 'expense'}">
+                        ${row.type === 'Income' ? '+' : '-'}${formatMoney(row.amount)}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function buildChartDatasets(baseType) {
+            const months = getVisibleMonths();
+            const datasets = [];
+
+            if (chartState.incomeVisible) {
+                datasets.push({
+                    label: 'Income',
+                    data: months.map((month) => Number(monthlyComparisonSummary[month]?.income || 0)),
+                    borderColor: '#10b981',
+                    backgroundColor: baseType === 'line' ? 'rgba(16, 185, 129, 0.14)' : 'rgba(16, 185, 129, 0.82)',
+                    tension: 0.35,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    borderWidth: 3,
+                    fill: false,
+                    borderRadius: 8,
+                    borderSkipped: false,
+                    maxBarThickness: 28,
+                });
+            }
+
+            if (chartState.expenseVisible) {
+                datasets.push({
+                    label: 'Expenses',
+                    data: months.map((month) => Number(monthlyComparisonSummary[month]?.expense || 0)),
+                    borderColor: '#f97316',
+                    backgroundColor: baseType === 'line' ? 'rgba(249, 115, 22, 0.12)' : 'rgba(249, 115, 22, 0.82)',
+                    tension: 0.35,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    borderWidth: 3,
+                    fill: false,
+                    borderRadius: 8,
+                    borderSkipped: false,
+                    maxBarThickness: 28,
+                });
+            }
+
+            return { months, datasets };
+        }
+
+        function renderFinanceChart() {
+            const canvas = document.getElementById('financeChart');
+            if (!canvas) return;
+
+            const chartType = chartState.type;
+            const isPercent = chartType === 'bar-percent';
+            const isLine = chartType === 'line';
+            const { months, datasets } = buildChartDatasets(isLine ? 'line' : 'bar');
+
+            let preparedDatasets = datasets.map((dataset) => {
+                if (!isPercent) return dataset;
+                const normalized = months.map((month) => {
+                    const entry = monthlyComparisonSummary[month] || { income: 0, expense: 0 };
+                    const incomeValue = Number(entry.income || 0);
+                    const expenseValue = Number(entry.expense || 0);
+                    const total = incomeValue + expenseValue;
+                    if (!total) return 0;
+                    const relevantValue = dataset.label === 'Income' ? incomeValue : expenseValue;
+                    return (relevantValue / total) * 100;
+                });
+
+                return {
+                    ...dataset,
+                    data: normalized,
+                    type: 'bar',
+                    backgroundColor: dataset.label === 'Income' ? 'rgba(16, 185, 129, 0.82)' : 'rgba(249, 115, 22, 0.82)',
+                    borderColor: dataset.label === 'Income' ? '#10b981' : '#f97316',
+                    borderWidth: 1,
+                    fill: false,
+                    tension: 0.35,
+                };
+            });
+
+            if (window.financeChart) {
+                window.financeChart.destroy();
+            }
+
+            window.financeChart = new Chart(canvas, {
+                type: isLine ? 'line' : 'bar',
+                data: {
+                    labels: months.map(formatMonthLabel),
+                    datasets: preparedDatasets,
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { usePointStyle: true, boxWidth: 8, padding: 14 },
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => `${context.dataset.label}: ${isPercent ? `${context.parsed.y.toFixed(1)}%` : formatMoney(context.parsed.y ?? context.parsed)}`,
+                            },
+                        },
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { maxRotation: 0, autoSkip: true },
+                        },
+                        y: {
+                            beginAtZero: false,
+                            grid: { color: 'rgba(148,163,184,0.12)' },
+                            ticks: {
+                                callback: (value) => isPercent ? `${value}%` : `${value} PLN`,
+                            },
+                        },
+                    },
+                },
+                plugins: [{
+                    id: 'valueLabels',
+                    afterDatasetsDraw(chart) {
+                        if (chart.config.type !== 'bar' || isPercent) return;
+                        const { ctx } = chart;
+                        ctx.save();
+                        ctx.font = '12px sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'bottom';
+                        chart.data.datasets.forEach((dataset) => {
+                            const meta = chart.getDatasetMeta(chart.data.datasets.indexOf(dataset));
+                            meta.data.forEach((bar, index) => {
+                                const value = dataset.data[index];
+                                if (value === 0 || value === null || value === undefined) return;
+                                ctx.fillStyle = '#0f172a';
+                                ctx.fillText(String(Math.round(value)), bar.x, bar.y - 8);
+                            });
+                        });
+                        ctx.restore();
+                    },
+                }],
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
             const storedScroll = sessionStorage.getItem('finance-scroll-position');
             if (storedScroll !== null) {
                 window.scrollTo(0, parseInt(storedScroll, 10));
                 sessionStorage.removeItem('finance-scroll-position');
             }
+
+            buildSeriesControls();
+            buildExpenseBreakdown();
+            buildRecentTransactions();
+
+            document.querySelectorAll('.toggle-btn').forEach((button) => {
+                button.addEventListener('click', () => {
+                    chartState.type = button.dataset.chartType;
+                    document.querySelectorAll('.toggle-btn').forEach((item) => item.classList.toggle('active', item === button));
+                    renderFinanceChart();
+                });
+            });
+
+            const rangeSelect = document.getElementById('financeRange');
+            if (rangeSelect) {
+                rangeSelect.addEventListener('change', (event) => {
+                    chartState.range = Number(event.target.value || 12);
+                    renderFinanceChart();
+                });
+            }
+
+            renderFinanceChart();
         });
     </script>
 {% endblock %}

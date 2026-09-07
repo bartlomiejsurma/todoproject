@@ -535,12 +535,16 @@ def finanse():
         "materials": "#10b981",
         "other": "#f59e0b",
     }
+    income_rows = [dict(row) for row in incomes]
+    expense_rows = [dict(row) for row in expenses]
 
     return render_template(
         "finanse.html",
         active_page="finanse",
         expenses=expenses,
         incomes=incomes,
+        income_rows=income_rows,
+        expense_rows=expense_rows,
         categories=db.EXPENSE_CATEGORIES,
         category_labels=db.EXPENSE_CATEGORY_LABELS,
         selected_category=selected_category,
