@@ -469,11 +469,12 @@ TASK_CATEGORIES = ISSUE_CATEGORIES
 TASK_CATEGORY_LABELS = ISSUE_CATEGORY_LABELS
 
 # --- Finanse ---
-EXPENSE_CATEGORIES = ["maintenance", "parts_tools", "materials", "other"]
+EXPENSE_CATEGORIES = ["maintenance", "parts_tools", "materials", "base_vehicle", "other"]
 EXPENSE_CATEGORY_LABELS = {
     "maintenance": "Maintenance",
     "parts_tools": "Tools",
     "materials": "Materials",
+    "base_vehicle": "Base Vehicle",
     "other": "Other",
     # legacy labels for old expense data
     "fuel": "Fuel",
