@@ -98,6 +98,10 @@
                     <button type="submit" class="btn">Apply filters</button>
                     <a href="/finanse" class="btn" style="background:#f8fafc; color:#475569; border:1px solid #e2e8f0; box-shadow:none;">Clear all filters</a>
                 </div>
+                <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:10px;">
+                    <a href="{{ url_for('export_finance', format='csv', **request.args.to_dict()) }}" class="btn" style="background:#dcfce7; color:#166534; box-shadow:none;">Export CSV</a>
+                    <a href="{{ url_for('export_finance', format='xlsx', **request.args.to_dict()) }}" class="btn" style="background:#dbeafe; color:#1d4ed8; box-shadow:none;">Export XLSX</a>
+                </div>
             </form>
         </div>
         <div class="card">

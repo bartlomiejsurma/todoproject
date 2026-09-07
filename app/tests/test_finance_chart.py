@@ -111,3 +111,33 @@ def test_get_all_incomes_filters_by_date_and_amount():
     filtered_titles = [row["title"] for row in result if row["title"] in {matched_title, other_title, small_title}]
 
     assert filtered_titles == [matched_title]
+
+
+def test_finance_export_csv_route_returns_tabular_data():
+    db.add_income("Export income", 125.0, "2024-12-01", "salary")
+    db.add_expense("Export expense", 42.5, "maintenance", "2024-12-02", "repair")
+
+    with app.test_client() as client:
+        with client.session_transaction() as session:
+            session["logged_in"] = True
+        response = client.get("/finanse/export?format=csv")
+
+    assert response.status_code == 200
+    assert response.mimetype == "text/csv"
+    body = response.get_data(as_text=True)
+    assert "Date,Type,Title,Category,Amount,Note" in body
+    assert "Export income" in body
+    assert "Export expense" in body
+
+
+def test_finance_export_xlsx_route_returns_excel_file():
+    db.add_expense("Excel export test", 15.0, "materials", "2024-12-03", "test note")
+
+    with app.test_client() as client:
+        with client.session_transaction() as session:
+            session["logged_in"] = True
+        response = client.get("/finanse/export?format=xlsx")
+
+    assert response.status_code == 200
+    assert response.mimetype == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    assert response.headers["Content-Disposition"].endswith(".xlsx\"")

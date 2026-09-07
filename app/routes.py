@@ -3,11 +3,20 @@ A simple Flask To-Do application.
 Data is stored in a SQLite database (camper.db) - see db.py.
 """
 
-from flask import Flask, render_template, request, redirect, url_for, session, flash
-from functools import wraps
-from datetime import date
-from werkzeug.utils import secure_filename
+import csv
+import io
 import os
+from datetime import date
+from functools import wraps
+
+from flask import Flask, Response, render_template, request, redirect, url_for, session, flash
+from werkzeug.utils import secure_filename
+
+try:
+    from openpyxl import Workbook
+except ImportError:  # pragma: no cover
+    Workbook = None
+
 from . import db
 
 app = Flask(__name__)
@@ -557,6 +566,101 @@ def finanse():
         today=today,
         category_colors=category_colors,
     )
+
+
+@app.route("/finanse/export")
+@login_required
+def export_finance():
+    selected_category = request.args.get("category")
+    start_date = request.args.get("start_date")
+    end_date = request.args.get("end_date")
+    min_amount = request.args.get("min_amount")
+    max_amount = request.args.get("max_amount")
+    try:
+        min_amount_val = float(min_amount) if min_amount else None
+    except ValueError:
+        min_amount_val = None
+    try:
+        max_amount_val = float(max_amount) if max_amount else None
+    except ValueError:
+        max_amount_val = None
+
+    expenses = db.get_all_expenses(
+        category=selected_category,
+        start_date=start_date,
+        end_date=end_date,
+        min_amount=min_amount_val,
+        max_amount=max_amount_val,
+    )
+    incomes = db.get_all_incomes(
+        start_date=start_date,
+        end_date=end_date,
+        min_amount=min_amount_val,
+        max_amount=max_amount_val,
+    )
+
+    rows = []
+    for income in incomes:
+        rows.append({
+            "Date": income["income_date"],
+            "Type": "Income",
+            "Title": income["title"],
+            "Category": "",
+            "Amount": float(income["amount"] or 0),
+            "Note": income["note"],
+        })
+    for expense in expenses:
+        rows.append({
+            "Date": expense["expense_date"],
+            "Type": "Expense",
+            "Title": expense["title"],
+            "Category": expense["category"],
+            "Amount": float(expense["amount"] or 0),
+            "Note": expense["note"],
+        })
+    rows.sort(key=lambda item: item["Date"], reverse=True)
+
+    headers = ["Date", "Type", "Title", "Category", "Amount", "Note"]
+    export_format = (request.args.get("format") or "csv").lower()
+
+    if export_format == "xlsx":
+        if Workbook is None:
+            return "XLSX export requires openpyxl to be installed.", 500
+        workbook = Workbook()
+        sheet = workbook.active
+        sheet.title = "Finance"
+        sheet.append(headers)
+        for row in rows:
+            sheet.append([
+                row["Date"],
+                row["Type"],
+                row["Title"],
+                row["Category"],
+                row["Amount"],
+                row["Note"],
+            ])
+        output = io.BytesIO()
+        workbook.save(output)
+        output.seek(0)
+        response = Response(output.getvalue(), mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        response.headers["Content-Disposition"] = 'attachment; filename="finance_export.xlsx"'
+        return response
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(headers)
+    for row in rows:
+        writer.writerow([
+            row["Date"],
+            row["Type"],
+            row["Title"],
+            row["Category"],
+            row["Amount"],
+            row["Note"],
+        ])
+    response = Response(output.getvalue(), mimetype="text/csv")
+    response.headers["Content-Disposition"] = 'attachment; filename="finance_export.csv"'
+    return response
 
 
 @app.route("/finanse/budget", methods=["POST"])
