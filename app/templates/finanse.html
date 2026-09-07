@@ -617,11 +617,11 @@
                     </div>
                     <div class="filter-field">
                         <label for="start_date">From</label>
-                        <input id="start_date" type="date" name="start_date" value="{{ start_date }}" class="input-field">
+                        <input id="start_date" type="date" name="start_date" value="{{ start_date or '' }}" class="input-field">
                     </div>
                     <div class="filter-field">
                         <label for="end_date">To</label>
-                        <input id="end_date" type="date" name="end_date" value="{{ end_date }}" class="input-field">
+                        <input id="end_date" type="date" name="end_date" value="{{ end_date or '' }}" class="input-field">
                     </div>
                     <div class="filter-field">
                         <label for="min_amount">Amount range</label>
@@ -793,7 +793,7 @@
                     <form action="/finanse/income" method="post" class="form-card" onsubmit="sessionStorage.setItem('finance-scroll-position', window.scrollY);">
                         <input class="input-field" type="text" name="title" placeholder="Income title">
                         <input class="input-field" type="text" name="amount" placeholder="Amount">
-                        <input class="input-field" type="date" name="income_date" value="{{ today }}">
+                        <input class="input-field" type="date" name="income_date" value="{{ today or '' }}">
                         <textarea class="textarea-field" name="note" placeholder="Note" rows="4"></textarea>
                         <button class="btn btn-primary" type="submit">Add income</button>
                     </form>
@@ -811,7 +811,7 @@
                             <option value="{{ category }}">{{ category_labels[category] }}</option>
                             {% endfor %}
                         </select>
-                        <input class="input-field" type="date" name="expense_date" value="{{ today }}">
+                        <input class="input-field" type="date" name="expense_date" value="{{ today or '' }}">
                         <textarea class="textarea-field" name="note" placeholder="Note" rows="4"></textarea>
                         <button class="btn btn-primary" type="submit">Add expense</button>
                     </form>
@@ -895,11 +895,11 @@
             const canvas = document.getElementById('expenseBreakdownChart');
             if (!canvas) return;
 
-            if (window.expenseBreakdownChart) {
-                window.expenseBreakdownChart.destroy();
+            if (window.expenseBreakdownChartInstance) {
+                window.expenseBreakdownChartInstance.destroy();
             }
 
-            window.expenseBreakdownChart = new Chart(canvas, {
+            window.expenseBreakdownChartInstance = new Chart(canvas, {
                 type: 'doughnut',
                 data: {
                     labels: entries.map(([key]) => categoryLabels[key] || key),
@@ -1043,11 +1043,11 @@
                 };
             });
 
-            if (window.financeChart) {
-                window.financeChart.destroy();
+            if (window.financeChartInstance) {
+                window.financeChartInstance.destroy();
             }
 
-            window.financeChart = new Chart(canvas, {
+            window.financeChartInstance = new Chart(canvas, {
                 type: isLine ? 'line' : 'bar',
                 data: {
                     labels: months.map(formatMonthLabel),
